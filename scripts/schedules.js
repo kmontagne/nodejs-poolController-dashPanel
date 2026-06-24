@@ -20,7 +20,7 @@
             if (typeof data !== 'undefined' && typeof data.schedules !== 'undefined') {
                 var schedules = data.schedules.sort((a, b) => a.id - b.id);
                 for (var i = 0; i < schedules.length; i++) {
-                    if (data.isActive === false || data.schedules[i].disabled) continue;
+                    if (data.isActive === false) continue;
                     if ((data.schedules[i].schedGroup || 0) !== targetGroup) continue;
                     let divSched = $('<div class="picSchedule"></div>');
                     divSched.appendTo(el);
@@ -56,7 +56,7 @@
             }
             var pnl = $('div.picSchedule[data-id=' + data.id + ']');
             if (pnl.length === 0) {
-                if (data.isActive === false || data.disabled) $(this).remove();
+                if (data.isActive === false) $(this).remove();
                 else {
                     var scheds = el.find('div.picSchedule');
                     var div = $('<div class="picSchedule"><div>');
@@ -92,7 +92,7 @@
             var self = this, o = self.options, el = self.element;
             var pnl = el.parents('div.picSchedules:first');
             try {
-                if (data.circuit <= 0 || data.isActive === false || data.disabled) {
+                if (data.circuit <= 0 || data.isActive === false) {
                     el.attr('data-active', false);
                     if (pnl.find('div.picSchedule[data-active=true]').length > 0)
                         pnl.show();
@@ -102,21 +102,33 @@
                     return;
                 }
                 var disp = typeof data.display === 'object' ? data.display.val || 0 : 0;
-                switch (disp) {
-                    case 1:
-                        if (makeBool(data.isOn)) el.show();
-                        else el.hide();
-                        break;
-                    case 2:
-                        el.hide();
-                        break;
-                    default:
-                        el.show();
-                        break;
+                if (data.disabled) {
+                    el.show();
+                }
+                else {
+                    switch (disp) {
+                        case 1:
+                            if (makeBool(data.isOn)) el.show();
+                            else el.hide();
+                            break;
+                        case 2:
+                            el.hide();
+                            break;
+                        default:
+                            el.show();
+                            break;
+                    }
                 }
                 el.attr('data-active', true);
+                el.removeClass('pending');
+                el.attr('data-disabled', data.disabled === true);
+                el.toggleClass('disabled', data.disabled === true);
                 dataBinder.bind(el, data);
-                el.find('div.picIndicator').attr('data-status', data.manualPriorityActive ? 'delay' : data.isOn ? 'on' : 'off');
+                el.find('div.picIndicator').attr('data-status', data.disabled ? 'off' : data.manualPriorityActive ? 'delay' : data.isOn ? 'on' : 'off');
+                el.find('i.picScheduleLockStatus')
+                    .toggleClass('fa-lock', data.disabled === true)
+                    .toggleClass('fa-unlock', data.disabled !== true)
+                    .attr('title', data.disabled === true ? 'Schedule disabled - click to enable' : 'Schedule enabled - click to disable');
                 el.attr('data-id', data.id);
                 el.find('.picSchedDays').remove();
                 var startTime = parseInt(data.startTime);
@@ -138,6 +150,11 @@
             var self = this, o = self.options, el = self.element;
             el.empty();
             $('<div class="picIndicator"></div><label class="picScheduleName" data-bind="circuit.name"></label>').appendTo(el);
+            $('<i class="fas fa-unlock picScheduleLockStatus"></i>').attr('title', 'Schedule enabled - click to disable').appendTo(el).on('click', function (evt) {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                self.toggleDisabled();
+            });
             el.attr('data-id', o.id);
             var span = $('<span></span>').appendTo(el).addClass('picSchedTime').addClass('picData');
 
@@ -146,6 +163,17 @@
             $('<span></span>').appendTo(span).addClass('picEndTime');
             //$('<span class="picSchedTime picData"><span class="picStartTime" data-bind="startTime" data-fmttype="time" data-fmtmask="hh:mmtt" data=fmtempty="--:--"></span> - <span class="picEndTime" data-bind="endTime" data-fmttype="time" data-fmtmask="hh:mmtt" data=fmtempty="--:--"></span></span>').appendTo(el);
             self._createDays(o).appendTo(el);
+        },
+        toggleDisabled: function () {
+            var self = this, el = self.element;
+            if (!$.pic.icSecurity.canWrite(14)) return;
+            var disabled = !makeBool(el.attr('data-disabled'));
+            el.addClass('pending');
+            $.putApiService('state/schedule/setDisabled', { id: parseInt(el.attr('data-id'), 10), disabled: disabled }, function (data, status, xhr) {
+                self.setEquipmentData(data);
+            }, function () {
+                el.removeClass('pending');
+            });
         },
         _isEveryDay: function (days) { return typeof days !== 'undefined' && days.val === 127; },
         _isWeekends: function (days) {

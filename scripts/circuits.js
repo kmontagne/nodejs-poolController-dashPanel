@@ -235,6 +235,11 @@
             var lbl = $('<label class="picFeatureLabel" data-bind="name"></label>');
             lbl.appendTo(el);
             lbl.text(o.name);
+            $('<i class="fas fa-unlock picLockStatus"></i>').attr('title', 'Unlocked').appendTo(el).on('click', function (evt) {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                self.toggleLockout();
+            });
             $('<span class="picCircuitEndTime"></span>').appendTo(el);
             if (typeof o.showInFeatures !== 'undefined') el.attr('data-showinfeatures', o.showInFeatures);
             self.setState(o);
@@ -242,13 +247,13 @@
             let startX;
             let startY;
             let start = function (evt) {
-                if ($(evt.target).hasClass('picDropdownButton')) return;
+                if ($(evt.target).hasClass('picDropdownButton') || $(evt.target).closest('i.picLockStatus').length > 0) return;
                 $(this).data('lastPressed', new Date().getTime());
                 startX = evt.pageX;
                 startY = evt.pageY;
             }
             let end = function (evt) {
-                if ($(evt.target).hasClass('picDropdownButton')) return;
+                if ($(evt.target).hasClass('picDropdownButton') || $(evt.target).closest('i.picLockStatus').length > 0) return;
                 if (el.find('i.picDropdownButton').hasClass('fa-spin')) return;
                 const diffX = Math.abs(evt.pageX - startX);
                 const diffY = Math.abs(evt.pageY - startY);
@@ -260,6 +265,7 @@
                     if (!$.pic.icSecurity.canWrite(13)) return;
                     var duration = new Date().getTime() - lastPressed;
                     $(this).data('lastPressed', false);
+                    if (self.locked()) return;
                     let ind = el.find('div.picFeatureToggle').find('div.picIndicator')
                     ind.attr('data-status', 'pending');
                     if (duration > 750) {
@@ -315,6 +321,7 @@
                 self.countdownEndTime();
                 if (typeof data.name !== 'undefined') el.find('label.picFeatureLabel:first').text(data.name);
                 if (typeof data.showInFeatures !== 'undefined') el.attr('data-showinfeatures', data.showInFeatures);
+                self.setLockoutState(data);
                 if (typeof data.action !== 'undefined')   { 
                     if (data.action.val !== 0) {
                         el.find('i.picDropdownButton').addClass('fa-spin');
@@ -332,6 +339,26 @@
         resetState: function () {
             var self = this, o = self.options, el = self.element;
             el.find('div.picFeatureToggle').find('div.picIndicator').attr('data-status', makeBool(el.attr('data-state')) ? 'on' : 'off');
+        },
+        locked: function () {
+            return makeBool(this.element.attr('data-locked'));
+        },
+        setLockoutState: function (data) {
+            var locked = makeBool(data.lockoutOn) || makeBool(data.lockoutOff);
+            this.element.attr('data-locked', locked);
+            this.element.toggleClass('locked', locked);
+            this.element.find('i.picLockStatus')
+                .toggleClass('fa-lock', locked)
+                .toggleClass('fa-unlock', !locked)
+                .attr('title', locked ? 'Locked - click to unlock' : 'Unlocked - click to lock');
+        },
+        toggleLockout: function () {
+            var self = this, el = self.element;
+            if (!$.pic.icSecurity.canWrite(13)) return;
+            var locked = !self.locked();
+            $.putApiService('state/circuit/setLockout', { id: parseInt(el.attr('data-featureid'), 10), locked: locked }, function (data, status, xhr) {
+                self.setState(data);
+            });
         },
         countdownEndTime: function () {
             var self = this, o = self.options, el = self.element;
@@ -643,19 +670,24 @@
 
             el.attr('data-type', 'circuit');
             $('<label class="picFeatureLabel" data-bind="name"></label>').appendTo(el);
+            $('<i class="fas fa-unlock picLockStatus"></i>').attr('title', 'Unlocked').appendTo(el).on('click', function (evt) {
+                evt.preventDefault();
+                evt.stopImmediatePropagation();
+                self.toggleLockout();
+            });
             $('<span class="picCircuitEndTime"></span>').appendTo(el);
             self._buildPopover();
             const delta = 6;
             let startX;
             let startY;
             let start = function (evt) {
-                if ($(evt.target).hasClass('picDropdownButton')) return;
+                if ($(evt.target).hasClass('picDropdownButton') || $(evt.target).closest('i.picLockStatus').length > 0) return;
                 $(this).data('lastPressed', new Date().getTime());
                 startX = evt.pageX;
                 startY = evt.pageY;
             };
             let end = function (evt) {
-                if ($(evt.target).hasClass('picDropdownButton')) return;
+                if ($(evt.target).hasClass('picDropdownButton') || $(evt.target).closest('i.picLockStatus').length > 0) return;
                 if (el.find('i.picDropdownButton').hasClass('fa-spin')) return;
                 const diffX = Math.abs(evt.pageX - startX);
                 const diffY = Math.abs(evt.pageY - startY);
@@ -669,6 +701,7 @@
                     if (!$.pic.icSecurity.canWrite(13)) return;
                     var duration = new Date().getTime() - lastPressed;
                     $(this).data('lastPressed', false);
+                    if (self.locked()) return;
                     if (duration > 750) {
                         if (self.disabled()) return;
                         let ind = el.find('div.picFeatureToggle').find('div.picIndicator');
@@ -793,6 +826,7 @@
                 });
                 if (typeof data.name !== 'undefined') el.find('label.picFeatureLabel').text(data.name);
                 if (typeof data.showInFeatures !== 'undefined') el.attr('data-showinfeatures', data.showInFeatures);
+                self.setLockoutState(data);
                 if (self.isLight(data)) {
                     el.addClass('picLight');
                     // Alright we are a light.  Make sure we have an entry in the lights panel.
@@ -821,6 +855,26 @@
                 if (val) el.addClass('disabled');
                 else el.removeClass('disabled');
             }
+        },
+        locked: function () {
+            return makeBool(this.element.attr('data-locked'));
+        },
+        setLockoutState: function (data) {
+            var locked = makeBool(data.lockoutOn) || makeBool(data.lockoutOff);
+            this.element.attr('data-locked', locked);
+            this.element.toggleClass('locked', locked);
+            this.element.find('i.picLockStatus')
+                .toggleClass('fa-lock', locked)
+                .toggleClass('fa-unlock', !locked)
+                .attr('title', locked ? 'Locked - click to unlock' : 'Unlocked - click to lock');
+        },
+        toggleLockout: function () {
+            var self = this, el = self.element;
+            if (!$.pic.icSecurity.canWrite(13)) return;
+            var locked = !self.locked();
+            $.putApiService('state/circuit/setLockout', { id: parseInt(el.attr('data-circuitid'), 10), locked: locked }, function (data, status, xhr) {
+                self.setState(data);
+            });
         },
         resetState: function () {
             var self = this, o = self.options, el = self.element;

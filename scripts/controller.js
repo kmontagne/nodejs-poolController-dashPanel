@@ -29,6 +29,7 @@
             // allow other widgets (e.g. Settings) to trigger a re-evaluation of locked UI
             el[0].refreshSecurity = function () { self._refreshSecurityStatus(function () { self._applySecurityUi(); }); };
             el[0].refreshIcSecurity = function () { self._refreshIcSecurity(); };
+            el[0].refreshRulesEngineStatus = function () { self._refreshRulesEngineStatus(); };
         },
         _refreshSecurityStatus: function (cb) {
             var self = this, o = self.options, el = self.element;
@@ -415,6 +416,7 @@
                 $('<span></span>').addClass('picPercentData').appendTo(cstatus);
                 $('<div></div>').addClass('picIndicator').attr('data-status', 'error').appendTo(cstatus);
                 $('<i></i>').addClass('fas fa-lock').appendTo($('<div></div>').addClass('picLockIcon').appendTo(divStatus));
+                $('<i></i>').addClass('fas fa-bolt').appendTo($('<div></div>').addClass('picRulesStatusIcon').attr('title', 'Rules engine status').appendTo(divStatus));
                 $('<i></i>').addClass('fas fa-cogs').appendTo($('<div></div>').addClass('picConfigIcon').appendTo(divStatus));
                 //$('<div class="picControllerStatus"><span class="picStatusData"></span><span class="picPercentData"></span><div class="picIndicator" data-status="error"></div><div class="picConfigIcon"><i class="fas fa-cogs"></i></div></div>').appendTo(row);
             }
@@ -436,6 +438,7 @@
             el.find('div.picModel > i').attr('aria-label', 'Open Settings').attr('data-nav-id', 'settings-open');
             el.find('div.picConfigIcon').attr('aria-label', 'Toggle Configuration View').attr('data-nav-id', 'config-toggle');
             el.find('div.picLockIcon').attr('aria-label', 'Lock Or Unlock Settings').attr('data-nav-id', 'security-lock-toggle');
+            self._refreshRulesEngineStatus();
             el.on('keydown', 'div.picModel > i, div.picConfigIcon, div.picLockIcon', function (evt) {
                 if (evt.key === 'Enter' || evt.key === ' ' || evt.key === 'Spacebar') {
                     evt.preventDefault();
@@ -569,6 +572,33 @@
             }
             self.setControllerState(data);
             self.setEquipmentState(typeof data !== 'undefined' ? data.equipment : undefined);
+        },
+        _refreshRulesEngineStatus: function () {
+            var self = this, o = self.options, el = self.element;
+            if (!makeBool($('body').attr('data-apiproxy')) && !$('body').attr('data-apiserviceurl')) {
+                if (o._rulesStatusTimer) clearTimeout(o._rulesStatusTimer);
+                o._rulesStatusTimer = setTimeout(function () { self._refreshRulesEngineStatus(); }, 1000);
+                return;
+            }
+            $.ajax({
+                url: '/njsPC/config/rules',
+                type: 'GET',
+                dataType: 'json',
+                timeout: 5000,
+                success: function (rules) {
+                    var enabled = !rules || rules.enabled !== false;
+                    el.find('div.picRulesStatusIcon')
+                        .toggleClass('disabled', !enabled)
+                        .attr('title', enabled ? 'Rules engine enabled' : 'Rules engine disabled')
+                        .attr('aria-label', enabled ? 'Rules engine enabled' : 'Rules engine disabled');
+                },
+                error: function () {
+                    el.find('div.picRulesStatusIcon')
+                        .addClass('disabled')
+                        .attr('title', 'Rules engine status unavailable')
+                        .attr('aria-label', 'Rules engine status unavailable');
+                }
+            });
         },
         _buildConfigPage: function () {
             var self = this, o = self.options, el = self.element;
@@ -1608,6 +1638,7 @@
                         var cfg = dataBinder.fromElement(divOuter);
                         evaluateInternalHostWarning();
                         $.putLocalService('/config/serviceUri', cfg.services, 'Updating Connection...', function (data, status, xhr) {
+                            setStorage('dashLastServiceUri', JSON.stringify(cfg.services));
                             $('div.picDashboard, div.picMessageManager').each(function () { this.reset(); });
                         });
                     }
@@ -2387,5 +2418,3 @@
         }
     });
 })(jQuery);
-
-

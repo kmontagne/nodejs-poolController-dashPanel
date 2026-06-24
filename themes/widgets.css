@@ -374,6 +374,25 @@ div.picFeature > div.picToggleButton, div.picVirtualCircuit > div.picToggleButto
     margin-right:.2em;
     vertical-align:middle;
 }
+div.picFeature > i.picLockStatus {
+    cursor: pointer;
+    float: right;
+    line-height: 1rem;
+    margin-left: .35rem;
+    margin-right: .15rem;
+    opacity: .55;
+    vertical-align: middle;
+}
+div.picFeature > i.picLockStatus:hover {
+    opacity: 1;
+}
+div.picFeature.locked {
+    opacity: .62;
+}
+div.picFeature.locked > i.picLockStatus {
+    color: #b00020;
+    opacity: 1;
+}
 div.picBodies {
 /*     max-width: 40rem;
     min-width: 22rem; */
@@ -428,6 +447,29 @@ div.picSchedules{
 div.picPump, div.picSchedule {
     padding-top: .1rem;
     padding-bottom: .1rem;
+}
+div.picSchedule.disabled {
+    opacity: .62;
+}
+div.picSchedule.pending {
+    opacity: .5;
+    pointer-events: none;
+}
+div.picSchedule > i.picScheduleLockStatus {
+    cursor: pointer;
+    float: right;
+    line-height: 1rem;
+    margin-left: .35rem;
+    margin-right: .15rem;
+    opacity: .55;
+    vertical-align: middle;
+}
+div.picSchedule > i.picScheduleLockStatus:hover {
+    opacity: 1;
+}
+div.picSchedule.disabled > i.picScheduleLockStatus {
+    color: #b00020;
+    opacity: 1;
 }
 div.picPump > div, div.picSchedule > div {
     display: inline-block;

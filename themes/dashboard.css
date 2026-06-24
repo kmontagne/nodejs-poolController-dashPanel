@@ -136,6 +136,31 @@ div.picModel > i:hover {
   color: orange;
 }
 
+div.picRulesStatusIcon {
+  color: #ff9900;
+  cursor: default;
+  display: inline-block;
+  margin-left: 0.45rem;
+  margin-right: 0.1rem;
+  position: relative;
+  vertical-align: text-top;
+}
+
+div.picRulesStatusIcon.disabled {
+  color: #b00020;
+}
+
+div.picRulesStatusIcon.disabled::after {
+  background: #b00020;
+  content: "";
+  height: 2px;
+  left: -0.12rem;
+  position: absolute;
+  top: 50%;
+  transform: rotate(-35deg);
+  width: 1.05rem;
+}
+
 div.picPanelMode > label,
 div.picFreezeProtect > label,
 div.picSpaDrain > label {
@@ -349,6 +374,15 @@ div.dashOuter {
   max-width: 1240px;
 }
 
+header.picHeader {
+  max-width: calc(100vw - 2rem);
+  width: 47rem;
+}
+
+header.picHeader > div.picController {
+  width: 100% !important;
+}
+
 div.dashContainer {
   /*   display: grid;
   grid-template-columns: repeat(auto-fill,minmax(377px, 1fr));  */
@@ -367,6 +401,275 @@ div.dashOuter[data-panel=dashboard] > div.configContainer {
 
 div.dashOuter[data-panel=configuration] > div.dashContainer {
   display: none;
+}
+
+div.picRules {
+  display: var(--picRules-display, block);
+  flex: 0 0 47rem;
+  max-width: calc(100vw - 2rem);
+  order: 999;
+  width: 47rem !important;
+}
+
+div.picRules.dirty {
+  box-shadow: 0 0 0 2px #ff9900 inset;
+}
+
+div.picRulesEditor {
+  width: 100%;
+}
+
+div.picRulesTitle i {
+  color: #ff9900;
+  margin-right: 0.3rem;
+}
+
+div.picRulesTop {
+  align-items: center;
+  border-bottom: solid 3px #ff9900;
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.25rem 0;
+  white-space: nowrap;
+}
+
+div.picRulesTop label {
+  flex: 1 1 auto;
+}
+
+div.picRulesTop button {
+  flex: 0 0 auto;
+}
+
+button.picRulesSave.dirty {
+  font-weight: bold;
+}
+
+div.picRulesHint,
+div.picRuleHelp {
+  color: #666;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  padding: 0.15rem 0.35rem;
+}
+
+div.picRulesStatus {
+  background: #fff8ee;
+  border: solid 1px #ffb765;
+  border-radius: 3px;
+  margin: 0.3rem 0.35rem;
+  padding: 0.35rem 0.55rem;
+}
+
+div.picRulesDirtyNotice {
+  background: #fff3cd;
+  border: solid 1px #ffcc66;
+  border-radius: 3px;
+  color: #4f3b00;
+  font-weight: bold;
+  margin: 0.3rem 0.35rem;
+  padding: 0.35rem 0.55rem;
+}
+
+div.picRulesShell {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.6rem;
+}
+
+div.picRuleGroups {
+  flex: 0 0 14rem;
+}
+
+div.picRuleEditor {
+  flex: 1 1 auto;
+  min-width: 18rem;
+}
+
+div.picRuleSideHead,
+div.picRuleSectionHead {
+  align-items: center;
+  border-bottom: solid 3px #ff9900;
+  display: flex;
+  font-weight: bold;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+}
+
+div.picRuleGroupItem {
+  align-items: center;
+  border: solid 1px transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  gap: 0.25rem;
+  justify-content: space-between;
+  margin: 0.3rem 0;
+  padding: 0.35rem;
+}
+
+div.picRuleGroupItem input[type=checkbox] {
+  flex: 0 0 auto;
+}
+
+div.picRuleGroupItem.selected {
+  background: #eef5ff;
+  border-color: #72a7ec;
+}
+
+div.picRuleGroupItem span {
+  flex: 1 1 auto;
+}
+
+div.picRuleGroupItem button,
+button.picRuleRemove {
+  color: #c92525;
+}
+
+label.picRuleField {
+  display: block;
+  margin: 0.18rem 0;
+}
+
+label.picRuleField > span {
+  display: block;
+  font-weight: normal;
+}
+
+label.picRuleField input,
+label.picRuleField select {
+  max-width: 100%;
+  width: 10.5rem;
+}
+
+label.picRuleCheck {
+  display: block;
+  margin: 0.2rem 0;
+}
+
+div.picRuleTabs {
+  margin: 0.25rem 0 0.4rem;
+}
+
+button.picRuleTab {
+  margin: 0 0.25rem 0.25rem 0;
+}
+
+button.picRuleTab.selected {
+  background: #eef5ff;
+  border-color: #72a7ec;
+  font-weight: bold;
+}
+
+button.picRuleTab i {
+  margin-left: 0.35rem;
+}
+
+div.picRuleSubhead {
+  font-weight: bold;
+  margin-top: 0.75rem;
+}
+
+div.picRuleBlock {
+  border: solid 1px #ddd;
+  border-radius: 5px;
+  margin: 0.35rem 0;
+  padding: 0.4rem 3.6rem 0.4rem 0.5rem;
+  position: relative;
+}
+
+div.picRuleEvalStatus {
+  border: 1px solid #d5d5d5;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  margin: 0.35rem 0;
+  padding: 0.3rem 0.45rem;
+}
+
+div.picRuleEvalStatus.matched {
+  background: #ecf8ef;
+  border-color: #72b37d;
+  color: #1f6b2c;
+}
+
+div.picRuleEvalStatus.notmatched {
+  background: #f7f7f7;
+  color: #555;
+}
+
+div.picRuleEvalStatus.pending {
+  background: #fff7e5;
+  border-color: #f0a000;
+  color: #7a4b00;
+}
+
+div.picRuleEvalStatus.inactive {
+  background: #f1f1f1;
+  color: #777;
+}
+
+div.picConditionStatus {
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  min-width: 2.75rem;
+  padding: 0.12rem 0.25rem;
+  position: absolute;
+  right: 0.45rem;
+  text-align: center;
+  top: 0.45rem;
+}
+
+div.picConditionStatus.true {
+  background: #2f8f46;
+  color: #fff;
+}
+
+div.picConditionStatus.false {
+  background: #b00020;
+  color: #fff;
+}
+
+div.picConditionStatus.unknown {
+  background: #ddd;
+  color: #555;
+}
+
+button.picRuleRemove {
+  position: absolute;
+  right: 0.3rem;
+  top: 1.85rem;
+}
+
+div.picRuleHysteresis {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+div.picRuleHysteresis label.picRuleField {
+  margin-top: 0;
+}
+
+div.picRuleEmpty {
+  color: #666;
+  padding: 0.6rem;
+}
+
+@media (max-width: 740px) {
+  div.picRulesShell {
+    display: block;
+  }
+
+  div.picRuleGroups {
+    margin-bottom: 0.8rem;
+  }
+
+  div.picRulesTop {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
 }
 
 div.picDashboard[data-hidethemes=true] div.picCircuit[data-type=circuit] i.picDropdownButton.fa-palette,
@@ -421,6 +724,11 @@ div.picBodyTemp > div:nth-child(2) {
   div.picController {
     min-width: 100%;
     max-width: 100%;
+  }
+
+  header.picHeader {
+    max-width: 100%;
+    width: 100%;
   }
   div.picController div.picModel {
     min-width: 0px;

@@ -118,18 +118,117 @@
             }
 
         },
+        _normalizeServiceUri: function (srv) {
+            srv = srv || {};
+            var port = parseInt(srv.port, 10);
+            var ip = (srv.ip || '').trim();
+            if (ip.indexOf(':') !== -1 && ip.indexOf('.') !== -1) ip = ip.split(':')[0];
+            return $.extend(true, {}, srv, {
+                protocol: srv.protocol || 'http://',
+                ip: ip,
+                port: isNaN(port) ? 4200 : port,
+                useProxy: makeBool(srv.useProxy)
+            });
+        },
+        _getSavedServiceUri: function () {
+            try {
+                var raw = getStorage('dashLastServiceUri');
+                if (!raw) return;
+                var srv = JSON.parse(raw);
+                if (!srv || !srv.ip) return;
+                return this._normalizeServiceUri(srv);
+            } catch (err) {
+                console.warn('Unable to read saved dashboard connection', err);
+            }
+        },
+        _setServiceUri: function (srv) {
+            var self = this, o = self.options;
+            srv = self._normalizeServiceUri(srv);
+            o.serviceUri = srv;
+            o.apiServiceUrl = srv.protocol + srv.ip + (typeof srv.port !== 'undefined' && !isNaN(srv.port) ? ':' + srv.port : '');
+            o.useProxy = makeBool(srv.useProxy);
+            $('body').attr('data-apiserviceurl', o.apiServiceUrl);
+            $('body').attr('data-apiproxy', o.useProxy);
+            return srv;
+        },
+        _saveServiceUri: function (srv) {
+            srv = this._normalizeServiceUri(srv);
+            setStorage('dashLastServiceUri', JSON.stringify({
+                protocol: srv.protocol,
+                ip: srv.ip,
+                port: srv.port,
+                useProxy: makeBool(srv.useProxy)
+            }));
+            $.ajax({
+                url: '/config/serviceUri',
+                type: 'PUT',
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                data: JSON.stringify(srv)
+            }).fail(function (xhr, status, error) {
+                console.warn('Unable to persist dashboard connection to server config', { status: status, error: error });
+            });
+        },
+        _getStateAll: function (srv, success, fail) {
+            srv = this._setServiceUri(srv);
+            var serviceUrl = makeBool(srv.useProxy) ? 'njsPC/state/all' : $('body').attr('data-apiserviceurl') + '/state/all';
+            return $.ajax({
+                url: serviceUrl,
+                type: 'GET',
+                dataType: 'json',
+                success: success,
+                error: fail,
+                timeout: 8000
+            });
+        },
+        _promptServiceUri: function (srv, reason) {
+            var self = this;
+            srv = self._normalizeServiceUri(srv);
+            if ($('#dlgDashboardConnection').length > 0) return;
+            var dlg = $.pic.modalDialog.createDialog('dlgDashboardConnection', {
+                width: '440px',
+                height: 'auto',
+                title: 'Pool Controller Connection',
+                buttons: [
+                    {
+                        text: 'Connect', icon: '<i class="fas fa-plug"></i>',
+                        click: function () {
+                            var cfg = dataBinder.fromElement(dlg) || {};
+                            $.pic.modalDialog.closeDialog(this);
+                            self._initState(self._normalizeServiceUri(cfg.services));
+                        }
+                    },
+                    {
+                        text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                        click: function () { $.pic.modalDialog.closeDialog(this); }
+                    }
+                ]
+            });
+            $('<div></div>').addClass('warning-message').css({ marginBottom: '.5rem' })
+                .text(reason || 'Unable to connect to the saved pool controller address. Enter a new connection.')
+                .appendTo(dlg);
+            var line = $('<div></div>').appendTo(dlg);
+            var binding = 'services.';
+            $('<div></div>').appendTo(line).pickList({
+                labelText: 'Server', binding: binding + 'protocol', required: true, canEdit: true,
+                inputAttrs: { maxlength: 4 }, labelAttrs: { style: { marginLeft: '.25rem' } },
+                columns: [{ binding: 'val', hidden: true, text: 'Protocol' }, { binding: 'name', text: 'Protocol' }, { binding: 'desc', text: 'Description' }],
+                bindColumn: 0, displayColumn: 1, items: [{ val: 'http://', name: 'http:', desc: 'HTTP' }, { val: 'https://', name: 'https:', desc: 'HTTPS' }]
+            });
+            $('<div></div>').appendTo(line).inputField({ labelText: '', binding: binding + 'ip', inputAttrs: { maxlength: 64, style: { width: '14rem' } } });
+            $('<div></div>').appendTo(line).inputField({ labelText: ':', dataType: 'int', fmtMask: '######', binding: binding + 'port', inputAttrs: { maxlength: 7, style: { width: '4rem' } }, labelAttrs: { style: { paddingLeft: '.15rem', marginRight: '.15rem' } } });
+            $('<div></div>').appendTo(dlg).checkbox({ labelText: 'Use Proxy to njsPC Server', binding: binding + 'useProxy' });
+            dataBinder.bind(dlg, { services: srv });
+        },
         _resetState: function () {
             var self = this, o = self.options, el = self.element;
             console.log('resetting state');
             $.getLocalService('/config/serviceUri', null, function (data, status, xhr) {
                 console.log(data);
-                var ip = data.ip || '';
-                if (ip.indexOf(':') !== -1 && ip.indexOf('.') !== -1) ip = ip.split(':')[0];
-                o.apiServiceUrl = data.protocol + ip + (typeof data.port !== 'undefined' && !isNaN(data.port) ? ':' + data.port : '');
-                o.useProxy = makeBool(data.useProxy);
-                $('body').attr('data-apiserviceurl', o.apiServiceUrl);
-                $('body').attr('data-apiproxy', o.useProxy);
+                data = self._getSavedServiceUri() || o.serviceUri || data;
+                self._setServiceUri(data);
                 $.getApiService('/state/all', null, function (data, status, xhr) {
+                    self._saveServiceUri(o.serviceUri);
                     self._setControllerType(data.controllerType);
                     if (typeof data.equipment !== 'undefined') $('body').attr('data-firmware', data.equipment.softwareVersion || '');
                     if (typeof data.temps !== 'undefined' && typeof data.temps.units !== 'undefined') {
@@ -174,19 +273,15 @@
                     .fail(function (xhr, status, error) { console.log('Failed:' + error); });
             });
         },
-        _initState: function () {
+        _initState: function (serviceUri) {
             var self = this, o = self.options, el = self.element;
             console.log('initializing state');
             $.getLocalService('/config/serviceUri', null, function (data, status, xhr) {
                 console.log(data);
-                var ip2 = data.ip || '';
-                if (ip2.indexOf(':') !== -1 && ip2.indexOf('.') !== -1) ip2 = ip2.split(':')[0];
-                o.apiServiceUrl = data.protocol + ip2 + (typeof data.port !== 'undefined' && !isNaN(data.port) ? ':' + data.port : '');
-                o.useProxy = makeBool(data.useProxy);
-                $('body').attr('data-apiserviceurl', o.apiServiceUrl);
-                $('body').attr('data-apiproxy', o.useProxy);
-                $.getApiService('/state/all', null, function (data, status, xhr) {
+                var targetServiceUri = self._normalizeServiceUri(serviceUri || self._getSavedServiceUri() || data);
+                self._getStateAll(targetServiceUri, function (data, status, xhr) {
                     if (typeof data.equipment === 'undefined' || typeof data.equipment.model === 'undefined') { self._clearPanels(); return; }
+                    self._saveServiceUri(targetServiceUri);
                     $('body').attr('data-firmware', data.equipment.softwareVersion || '');
                     if (typeof data.temps !== 'undefined' && typeof data.temps.units !== 'undefined') {
                         var initUnits = typeof data.temps.units === 'object' ? data.temps.units.val : data.temps.units;
@@ -267,6 +362,8 @@
                     $(':root').css('--picCovers-order', getStorage('--picCovers-order'));
                     if (typeof getStorage('--picCovers-display') === 'undefined') setStorage('--picCovers-display', $(':root').css('--picCovers-display'));
                     $(':root').css('--picCovers-display', getStorage('--picCovers-display'));
+                    if (typeof getStorage('--picRules-display') === 'undefined') setStorage('--picRules-display', $(':root').css('--picRules-display') || 'block');
+                    $(':root').css('--picRules-display', getStorage('--picRules-display'));
 
                     if (typeof getStorage('--show-time-remaining') === 'undefined') setStorage('--show-time-remaining', $(':root').css('--show-time-remaining'));
                     $(':root').css('--show-time-remaining', getStorage('--show-time-remaining'));
@@ -289,11 +386,13 @@
                             $(el).appendTo('.container1');
                         }
                     });
+                    $('div.picRules').appendTo('div.dashContainer');
                 })
                     .done(function (status, xhr) { console.log('Done:' + status); })
                     .fail(function (xhr, status, error) {
                         console.log('Failed:' + error);
                         self._clearPanels();
+                        self._promptServiceUri(targetServiceUri, 'Unable to connect to the saved pool controller address.');
                     });
             });
         },

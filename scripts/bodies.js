@@ -13,7 +13,7 @@
             div.appendTo(el);
             var d = $('<div><label class="picInline-label picAmbientTemp">Air Temp</label><span class="picAirTemp"></span><label class="picUnitSymbol">&deg;</label><span class="picTempUnits">-</span></div>');
             d.appendTo(div);
-            d = $('<div class="picSolarTempField"><label class="picInline-label picAmbientTemp">Solar Temp</label><span class="picSolarTemp"></span><label class="picUnitSymbol">&deg;</label><span class="picTempUnits">-</span></div>');
+            d = $('<div class="picSolarTempField"><label class="picInline-label picAmbientTemp">Glacier Temp</label><span class="picSolarTemp"></span><label class="picUnitSymbol">&deg;</label><span class="picTempUnits">-</span></div>');
             d.appendTo(div);
             if (typeof data !== 'undefined') {
                 el.show();
@@ -36,7 +36,6 @@
         },
         setTemps: function (data) {
             var self = this, o = self.options, el = self.element;
-            var nSolar = 0;
             var tempFmt = $('body').attr('data-controllertype') === 'nixie' ? '#,##0.0' : '#,##0';
 
             if (typeof data.air !== 'undefined') el.find('span.picAirTemp').text(data.air.format(tempFmt, '--'));
@@ -48,11 +47,10 @@
             for (let i = 0; i < data.bodies.length; i++) {
                 let body = data.bodies[i];
                 el.find('div.picBody[data-id=' + body.id + ']').each(function () {
-                    if (typeof body.heaterOptions !== 'undefined') nSolar += ((body.heaterOptions.solar || 0) + (body.heaterOptions.heatPump || 0));
                     this.setEquipmentData(body);
                 });
             }
-            if (nSolar === 0) el.find('div.picSolarTempField').hide();
+            if (typeof data.solar === 'undefined') el.find('div.picSolarTempField').hide();
             else el.find('div.picSolarTempField').show();
         }
     });
