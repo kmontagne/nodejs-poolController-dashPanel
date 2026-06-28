@@ -193,6 +193,7 @@
             var type = self._conditionType(condition);
             self._field(box, 'Type', self._select([
                 { v: 'temp', t: 'Temp' },
+                { v: 'tempDelta', t: 'Temp difference' },
                 { v: 'circuitState', t: 'Circuit state' },
                 { v: 'featureState', t: 'Feature state' },
                 { v: 'bodyHeater', t: 'Body heater' },
@@ -203,6 +204,7 @@
                 self._buildControls();
             }));
             if (type === 'temp') self._conditionTemp(box, condition);
+            else if (type === 'tempDelta') self._conditionTempDelta(box, condition);
             else if (type === 'circuitState') self._conditionCircuitState(box, condition);
             else if (type === 'featureState') self._conditionFeatureState(box, condition);
             else if (type === 'bodyHeater') self._conditionBodyHeater(box, condition);
@@ -215,16 +217,25 @@
         },
         _conditionTemp: function (box, condition) {
             var self = this;
-            self._field(box, 'Source', self._select([
-                { v: 'poolTemp', t: 'Pool temp' },
-                { v: 'spaTemp', t: 'Spa temp' },
-                { v: 'solarTemp', t: 'Solar/Glacier temp' },
-                { v: 'airTemp', t: 'Air temp' },
-                { v: 'poolSolarDelta', t: 'Pool - Solar delta' },
-                { v: 'spaSolarDelta', t: 'Spa - Solar delta' }
-            ], condition.left || 'poolTemp').on('change', function () { condition.left = this.value; self._markDirty(); }));
+            self._field(box, 'Source', self._tempSourceSelect(condition.left || 'poolTemp', true).on('change', function () { condition.left = this.value; self._markDirty(); }));
             self._field(box, 'Operator', self._operatorSelect(condition.operator || '>').on('change', function () { condition.operator = this.value; self._markDirty(); }));
             self._field(box, 'Value', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
+        },
+        _conditionTempDelta: function (box, condition) {
+            var self = this, parsed = self._parseTempDelta(condition.left);
+            self._field(box, 'Higher temp', self._tempSourceSelect(parsed.left, false).on('change', function () {
+                parsed.left = this.value;
+                condition.left = self._tempDeltaValue(parsed.left, parsed.right);
+                self._markDirty();
+            }));
+            self._field(box, 'Lower temp', self._tempSourceSelect(parsed.right, false).on('change', function () {
+                parsed.right = this.value;
+                condition.left = self._tempDeltaValue(parsed.left, parsed.right);
+                self._markDirty();
+            }));
+            self._field(box, 'Operator', self._operatorSelect(condition.operator || '>=').on('change', function () { condition.operator = this.value; self._markDirty(); }));
+            self._field(box, 'Degrees', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
+            $('<div class="picRuleHelp">Compares Higher temp minus Lower temp. For Glacier, use Pool temp minus Solar/Glacier temp &gt;= the minimum useful cooling difference.</div>').appendTo(box);
         },
         _conditionCircuitState: function (box, condition) {
             var self = this, parsed = self._parseStatePath(condition.left, 'circuit');
@@ -400,6 +411,21 @@
                 { v: '===', t: 'Equals' }, { v: '!==', t: 'Not equals' }
             ], value);
         },
+        _tempSourceSelect: function (value, includeLegacyDeltas) {
+            var items = [
+                { v: 'poolTemp', t: 'Pool temp' },
+                { v: 'spaTemp', t: 'Spa temp' },
+                { v: 'solarTemp', t: 'Solar/Glacier temp' },
+                { v: 'airTemp', t: 'Air temp' },
+                { v: 'bodyTemp', t: 'Selected body temp' }
+            ];
+            if (includeLegacyDeltas === true) {
+                items.push({ v: 'poolSolarDelta', t: 'Pool - Solar delta' });
+                items.push({ v: 'spaSolarDelta', t: 'Spa - Solar delta' });
+                items.push({ v: 'bodySolarDelta', t: 'Selected body - Solar delta' });
+            }
+            return this._select(items, value);
+        },
         _refSelect: function (kind, value) {
             var sel = $('<select></select>');
             var refs = this.options.circuitRefs.filter(function (r) { return r.equipmentType === kind; });
@@ -487,6 +513,7 @@
             return { id: 'rule-' + Date.now(), name: 'New Rule', enabled: true, match: 'all', conditions: [this._newCondition('temp')], actions: [this._newAction('setCircuit')], otherwiseActions: [], hysteresis: { enabled: false, durationSeconds: 0, resetOnFalse: true } };
         },
         _newCondition: function (type) {
+            if (type === 'tempDelta') return { left: 'tempDelta:poolTemp:solarTemp', operator: '>=', right: 5 };
             if (type === 'circuitState') return { left: 'circuit:' + (this._firstRefId('circuit') || '') + ':isOn', operator: 'isTrue' };
             if (type === 'featureState') return { left: 'feature:' + (this._firstRefId('feature') || '') + ':isOn', operator: 'isTrue' };
             if (type === 'bodyHeater') return { left: 'spaHeaterActive', operator: 'isTrue' };
@@ -504,9 +531,20 @@
         _conditionType: function (condition) {
             if (String(condition.left || '').indexOf('circuit:') === 0) return 'circuitState';
             if (String(condition.left || '').indexOf('feature:') === 0) return 'featureState';
+            if (String(condition.left || '').indexOf('tempDelta:') === 0) return 'tempDelta';
             if (['spaHeaterActive', 'spaHeatModeOn', 'poolHeaterActive', 'poolHeatModeOn'].indexOf(condition.left) >= 0) return 'bodyHeater';
-            if (['poolTemp', 'spaTemp', 'solarTemp', 'airTemp', 'poolSolarDelta', 'spaSolarDelta'].indexOf(condition.left) >= 0) return 'temp';
+            if (['poolTemp', 'spaTemp', 'bodyTemp', 'solarTemp', 'airTemp', 'poolSolarDelta', 'spaSolarDelta', 'bodySolarDelta'].indexOf(condition.left) >= 0) return 'temp';
             return 'stateValue';
+        },
+        _parseTempDelta: function (left) {
+            var parts = String(left || '').split(':');
+            return {
+                left: parts[0] === 'tempDelta' && parts[1] ? parts[1] : 'poolTemp',
+                right: parts[0] === 'tempDelta' && parts[2] ? parts[2] : 'solarTemp'
+            };
+        },
+        _tempDeltaValue: function (left, right) {
+            return 'tempDelta:' + (left || 'poolTemp') + ':' + (right || 'solarTemp');
         },
         _heaterValue: function (body, mode) {
             return body === 'pool' ? (mode === 'mode' ? 'poolHeatModeOn' : 'poolHeaterActive') : (mode === 'mode' ? 'spaHeatModeOn' : 'spaHeaterActive');
