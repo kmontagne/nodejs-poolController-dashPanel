@@ -432,6 +432,7 @@
                 { v: 'spaTemp', t: 'Spa temp' },
                 { v: 'solarTemp', t: 'Solar/Glacier temp' },
                 { v: 'airTemp', t: 'Air temp' },
+                { v: 'dewPoint', t: 'Dew point' },
                 { v: 'bodyTemp', t: 'Selected body temp' }
             ];
             if (includeLegacyDeltas === true) {
@@ -549,7 +550,7 @@
             if (String(condition.left || '').indexOf('feature:') === 0) return 'featureState';
             if (String(condition.left || '').indexOf('tempDelta:') === 0) return 'tempDelta';
             if (['spaHeaterActive', 'spaHeatModeOn', 'poolHeaterActive', 'poolHeatModeOn'].indexOf(condition.left) >= 0) return 'bodyHeater';
-            if (['poolTemp', 'spaTemp', 'bodyTemp', 'solarTemp', 'airTemp', 'poolSolarDelta', 'spaSolarDelta', 'bodySolarDelta'].indexOf(condition.left) >= 0) return 'temp';
+            if (['poolTemp', 'spaTemp', 'bodyTemp', 'solarTemp', 'airTemp', 'dewPoint', 'poolSolarDelta', 'spaSolarDelta', 'bodySolarDelta'].indexOf(condition.left) >= 0) return 'temp';
             return 'stateValue';
         },
         _parseTempDelta: function (left) {

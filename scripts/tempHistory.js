@@ -7,8 +7,12 @@
                 pool: { label: 'Pool', color: '#1f77b4', enabled: true },
                 spa: { label: 'Spa', color: '#d62728', enabled: true },
                 glacier: { label: 'Glacier', color: '#2ca02c', enabled: true },
-                air: { label: 'Air', color: '#9467bd', enabled: true }
+                air: { label: 'Air', color: '#9467bd', enabled: true },
+                dewPoint: { label: 'Dew Point', color: '#17becf', enabled: false }
             },
+            chart: null,
+            hoverPoint: null,
+            statusText: '',
             timer: null
         },
         _create: function () {
@@ -87,7 +91,13 @@
                     .appendTo(toggles);
             });
             $('<div class="picTempHistoryStatus"></div>').appendTo(content);
-            $('<canvas class="picTempHistoryChart" width="720" height="320"></canvas>').appendTo(content);
+            $('<canvas class="picTempHistoryChart" width="720" height="320"></canvas>').appendTo(content)
+                .on('mousemove', function (evt) { self._handleHover(evt); })
+                .on('mouseleave', function () {
+                    self.options.hoverPoint = null;
+                    self._status(self.options.statusText);
+                    self._draw();
+                });
         },
         _field: function (parent, label, input) {
             var row = $('<label class="picTempHistoryField"></label>').appendTo(parent);
@@ -122,6 +132,7 @@
             }
             $.getApiService('/state/tempHistory?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end), null, function (data) {
                 self.options.points = data && Array.isArray(data.points) ? data.points : [];
+                self.options.hoverPoint = null;
                 self._status(self.options.points.length + ' samples loaded.');
                 self._draw();
             });
@@ -146,6 +157,7 @@
             var ctx = canvas.getContext('2d');
             var w = canvas.width, h = canvas.height;
             var pad = { left: 48, right: 18, top: 18, bottom: 38 };
+            self.options.chart = null;
             ctx.clearRect(0, 0, w, h);
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, w, h);
@@ -176,10 +188,12 @@
             }
             minTemp = Math.floor(minTemp - 1);
             maxTemp = Math.ceil(maxTemp + 1);
+            self.options.chart = { pad: pad, minTs: minTs, maxTs: maxTs, minTemp: minTemp, maxTemp: maxTemp, width: w, height: h, enabledKeys: enabledKeys };
             self._drawAxes(ctx, w, h, pad, minTs, maxTs, minTemp, maxTemp);
             enabledKeys.forEach(function (key) {
                 self._drawSeries(ctx, points, key, self.options.series[key].color, pad, w, h, minTs, maxTs, minTemp, maxTemp);
             });
+            self._drawHover(ctx);
         },
         _drawAxes: function (ctx, w, h, pad, minTs, maxTs, minTemp, maxTemp) {
             ctx.strokeStyle = '#bbb';
@@ -227,6 +241,84 @@
             });
             ctx.stroke();
         },
+        _handleHover: function (evt) {
+            var self = this, chart = self.options.chart;
+            if (!chart) return;
+            var canvas = self.element.find('canvas.picTempHistoryChart')[0];
+            if (!canvas) return;
+            var rect = canvas.getBoundingClientRect();
+            var scaleX = canvas.width / rect.width;
+            var scaleY = canvas.height / rect.height;
+            var x = (evt.clientX - rect.left) * scaleX;
+            var y = (evt.clientY - rect.top) * scaleY;
+            var pad = chart.pad;
+            if (x < pad.left || x > chart.width - pad.right || y < pad.top || y > chart.height - pad.bottom) {
+                self.options.hoverPoint = null;
+                self._status(self.options.statusText);
+                self._draw();
+                return;
+            }
+            var targetTs = chart.minTs + ((x - pad.left) / (chart.width - pad.left - pad.right)) * (chart.maxTs - chart.minTs);
+            var nearest = self._nearestPoint(targetTs, chart.enabledKeys);
+            self.options.hoverPoint = nearest;
+            self._renderHover(nearest);
+            self._draw();
+        },
+        _nearestPoint: function (targetTs, enabledKeys) {
+            var nearest, nearestDelta = Number.MAX_VALUE;
+            (this.options.points || []).forEach(function (p) {
+                var hasValue = enabledKeys.some(function (key) { return typeof p[key] === 'number'; });
+                if (!hasValue) return;
+                var delta = Math.abs(p.ts - targetTs);
+                if (delta < nearestDelta) {
+                    nearest = p;
+                    nearestDelta = delta;
+                }
+            });
+            return nearest;
+        },
+        _drawHover: function (ctx) {
+            var chart = this.options.chart, point = this.options.hoverPoint;
+            if (!chart || !point) return;
+            var pad = chart.pad;
+            var chartW = chart.width - pad.left - pad.right;
+            var chartH = chart.height - pad.top - pad.bottom;
+            var x = pad.left + ((point.ts - chart.minTs) / (chart.maxTs - chart.minTs)) * chartW;
+            ctx.save();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(x, pad.top);
+            ctx.lineTo(x, chart.height - pad.bottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            chart.enabledKeys.forEach(function (key) {
+                if (typeof point[key] !== 'number') return;
+                var y = chart.height - pad.bottom - ((point[key] - chart.minTemp) / (chart.maxTemp - chart.minTemp)) * chartH;
+                ctx.fillStyle = this.options.series[key].color;
+                ctx.beginPath();
+                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            }, this);
+            ctx.restore();
+        },
+        _renderHover: function (point) {
+            var panel = this.element.find('div.picTempHistoryStatus').empty();
+            if (!point) return;
+            $('<span class="picTempHistoryHoverTime"></span>').text(new Date(point.ts).toLocaleString()).appendTo(panel);
+            var self = this;
+            var values = (self.options.chart.enabledKeys || [])
+                .filter(function (key) { return typeof point[key] === 'number'; })
+                .sort(function (a, b) { return point[b] - point[a]; });
+            values.forEach(function (key) {
+                $('<span class="picTempHistoryHoverValue"></span>')
+                    .append($('<i></i>').css('background-color', self.options.series[key].color))
+                    .append(document.createTextNode(self.options.series[key].label + ': ' + point[key].toFixed(1) + 'F'))
+                    .appendTo(panel);
+            });
+            if (values.length === 0) this._status(this.options.statusText);
+        },
         _emptyChart: function (ctx, w, h, text) {
             ctx.fillStyle = '#777';
             ctx.font = '14px sans-serif';
@@ -235,7 +327,8 @@
             ctx.fillText(text, w / 2, h / 2);
         },
         _status: function (text) {
-            this.element.find('div.picTempHistoryStatus').text(text || '');
+            this.options.statusText = text || '';
+            this.element.find('div.picTempHistoryStatus').text(this.options.statusText);
         },
         _apiReady: function () {
             return makeBool($('body').attr('data-apiproxy')) || !!$('body').attr('data-apiserviceurl');

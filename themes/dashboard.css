@@ -559,19 +559,44 @@ div.picTempHistoryToggles span {
 }
 
 div.picTempHistoryStatus {
+  align-items: center;
   color: #555;
-  font-size: 0.78rem;
-  min-height: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  min-height: 1.25rem;
 }
 
 canvas.picTempHistoryChart {
   background: #fff;
   border: solid 1px #ccc;
+  cursor: crosshair;
   display: block;
   height: auto;
   margin-top: 0.4rem;
   max-width: 100%;
   width: 100%;
+}
+
+span.picTempHistoryHoverTime {
+  color: #333;
+  font-weight: bold;
+}
+
+span.picTempHistoryHoverValue {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+span.picTempHistoryHoverValue i {
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.55rem;
+  width: 0.55rem;
 }
 
 div.picRulesTop {
