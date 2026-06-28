@@ -139,6 +139,7 @@
             }));
             $('<label class="picRuleCheck"><input type="checkbox"> Group enabled</label>').appendTo(editor)
                 .find('input').prop('checked', group.enabled !== false).on('change', function () { group.enabled = this.checked; self._markDirty(); });
+            self._buildActiveWindow(editor, group);
 
             var rulesHead = $('<div class="picRuleSectionHead"><span>Rules</span></div>').appendTo(editor);
             $('<button type="button"><i class="fas fa-plus"></i> Rule</button>').appendTo(rulesHead).on('click', function () {
@@ -190,6 +191,37 @@
             self._section(editor, 'Otherwise (actions)', 'Runs when the conditions remain false through the hysteresis duration, if enabled.');
             self._buildActions(editor, rule, 'otherwiseActions');
             self._buildHysteresis(editor, rule);
+        },
+        _buildActiveWindow: function (editor, group) {
+            var self = this;
+            group.activeWindow = group.activeWindow || { enabled: false };
+            var win = group.activeWindow;
+            $('<div class="picRuleSubhead">Active Window</div>').appendTo(editor);
+            $('<div class="picRuleHelp">When inactive, this group does not evaluate rules or run Otherwise actions. Empty fields mean unrestricted.</div>').appendTo(editor);
+            var box = $('<div class="picRuleActiveWindow"></div>').appendTo(editor);
+            $('<label class="picRuleCheck"><input type="checkbox"> Use active window</label>').appendTo(box)
+                .find('input').prop('checked', win.enabled === true).on('change', function () { win.enabled = this.checked; self._markDirty(); });
+            var fields = $('<div class="picRuleWindowFields"></div>').appendTo(box);
+            self._field(fields, 'Start date', $('<input type="text" placeholder="MM-DD">').val(win.startDate || '').on('change keyup', function () { win.startDate = this.value; self._markDirty(); }));
+            self._field(fields, 'End date', $('<input type="text" placeholder="MM-DD">').val(win.endDate || '').on('change keyup', function () { win.endDate = this.value; self._markDirty(); }));
+            self._field(fields, 'Start time', $('<input type="time">').val(win.startTime || '').on('change keyup', function () { win.startTime = this.value; self._markDirty(); }));
+            self._field(fields, 'End time', $('<input type="time">').val(win.endTime || '').on('change keyup', function () { win.endTime = this.value; self._markDirty(); }));
+            var days = $('<div class="picRuleDays"></div>').appendTo(box);
+            $('<span>Days</span>').appendTo(days);
+            var selected = Array.isArray(win.days) ? win.days : [];
+            var dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (var i = 0; i < dayNames.length; i++) {
+                (function (day) {
+                    $('<label><input type="checkbox"> ' + dayNames[day] + '</label>').appendTo(days)
+                        .find('input').prop('checked', selected.indexOf(day) >= 0).on('change', function () {
+                            win.days = Array.isArray(win.days) ? win.days : [];
+                            if (this.checked && win.days.indexOf(day) < 0) win.days.push(day);
+                            if (!this.checked) win.days = win.days.filter(function (d) { return d !== day; });
+                            win.days.sort();
+                            self._markDirty();
+                        });
+                })(i);
+            }
         },
         _buildConditions: function (editor, group, rule) {
             var self = this, list = $('<div class="picRuleBlocks"></div>').appendTo(editor);
@@ -363,10 +395,11 @@
             if (!group || !rule || !self.options.status) return;
             var ruleStatus = self._ruleStatus(group.id, rule.id);
             if (!ruleStatus) return;
+            var groupStatus = self._groupStatus(group.id);
             self.element.find('div.picRuleEvalStatus')
                 .removeClass('matched notmatched pending inactive')
                 .addClass(ruleStatus.active ? ruleStatus.pending ? 'pending' : ruleStatus.matched ? 'matched' : 'notmatched' : 'inactive')
-                .text(self._ruleStatusText(ruleStatus))
+                .text(self._ruleStatusText(ruleStatus, groupStatus))
                 .toggle(true);
             for (var i = 0; i < ruleStatus.conditions.length; i++) {
                 var condition = ruleStatus.conditions[i];
@@ -389,8 +422,23 @@
             }
             return null;
         },
-        _ruleStatusText: function (ruleStatus) {
-            if (!ruleStatus.active) return 'Rule is not active.';
+        _groupStatus: function (groupId) {
+            var status = this.options.status;
+            if (!status || !Array.isArray(status.groups)) return null;
+            for (var i = 0; i < status.groups.length; i++) {
+                if (status.groups[i].id === groupId) return status.groups[i];
+            }
+            return null;
+        },
+        _ruleStatusText: function (ruleStatus, groupStatus) {
+            if (!ruleStatus.active) {
+                var reason = (groupStatus && groupStatus.inactiveReason) || ruleStatus.inactiveReason;
+                if (reason === 'outsideDateRange') return 'Rule group is outside its active date range.';
+                if (reason === 'outsideDayOfWeek') return 'Rule group is outside its active days.';
+                if (reason === 'outsideTimeWindow') return 'Rule group is outside its active time window.';
+                if (reason === 'disabled') return 'Rule group is disabled.';
+                return 'Rule is not active.';
+            }
             if (ruleStatus.pending) {
                 return 'Hysteresis pending: waiting ' + ruleStatus.pending.remainingSeconds + ' sec before ' + (ruleStatus.pending.targetState ? 'Then' : 'Otherwise') + ' actions run.';
             }
@@ -513,6 +561,8 @@
             rules.groups = Array.isArray(rules.groups) ? rules.groups : [];
             for (var i = 0; i < rules.groups.length; i++) {
                 rules.groups[i].match = rules.groups[i].match || 'all';
+                rules.groups[i].activeWindow = rules.groups[i].activeWindow || { enabled: false };
+                rules.groups[i].activeWindow.days = Array.isArray(rules.groups[i].activeWindow.days) ? rules.groups[i].activeWindow.days : [];
                 rules.groups[i].rules = Array.isArray(rules.groups[i].rules) ? rules.groups[i].rules : [];
                 for (var j = 0; j < rules.groups[i].rules.length; j++) {
                     rules.groups[i].rules[j].match = rules.groups[i].rules[j].match || rules.groups[i].match || 'all';
@@ -524,7 +574,7 @@
         },
         _newGroup: function () {
             var id = 'rule-group-' + Date.now();
-            return { id: id, name: 'New Group', enabled: true, match: 'all', vars: {}, rules: [] };
+            return { id: id, name: 'New Group', enabled: true, match: 'all', activeWindow: { enabled: false, days: [] }, vars: {}, rules: [] };
         },
         _newRule: function () {
             return { id: 'rule-' + Date.now(), name: 'New Rule', enabled: true, match: 'all', conditions: [this._newCondition('temp')], actions: [this._newAction('setCircuit')], otherwiseActions: [], hysteresis: { enabled: false, durationSeconds: 0, resetOnFalse: true } };

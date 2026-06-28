@@ -823,6 +823,31 @@ div.picRuleHysteresis {
   grid-template-columns: 1fr 1fr;
 }
 
+div.picRuleActiveWindow {
+  border: solid 1px #ddd;
+  border-radius: 5px;
+  margin: 0.35rem 0;
+  padding: 0.45rem 0.55rem;
+}
+
+div.picRuleWindowFields {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(4, minmax(7.5rem, 1fr));
+}
+
+div.picRuleDays {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.35rem;
+}
+
+div.picRuleDays > span {
+  font-weight: bold;
+}
+
 div.picRuleHysteresis label.picRuleField {
   margin-top: 0;
 }
@@ -844,6 +869,10 @@ div.picRuleEmpty {
   div.picRulesTop {
     align-items: flex-start;
     flex-wrap: wrap;
+  }
+
+  div.picRuleWindowFields {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
