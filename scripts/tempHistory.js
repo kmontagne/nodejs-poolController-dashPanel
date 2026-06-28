@@ -6,7 +6,7 @@
             series: {
                 pool: { label: 'Pool', color: '#1f77b4', enabled: true },
                 spa: { label: 'Spa', color: '#d62728', enabled: true },
-                glacier: { label: 'Glacier', color: '#2ca02c', enabled: true },
+                glacier: { label: 'Solar', color: '#2ca02c', enabled: true },
                 air: { label: 'Air', color: '#9467bd', enabled: true },
                 dewPoint: { label: 'Dew Point', color: '#17becf', enabled: false }
             },
@@ -81,6 +81,7 @@
 
             var toggles = $('<div class="picTempHistoryToggles"></div>').appendTo(content);
             $.each(self.options.series, function (key, series) {
+                if (series.hidden) return;
                 $('<label></label>')
                     .append($('<input type="checkbox">').prop('checked', series.enabled).on('change', function () {
                         series.enabled = this.checked;
@@ -131,8 +132,10 @@
                 return;
             }
             $.getApiService('/state/tempHistory?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end), null, function (data) {
+                self._applyTemperatureLabels(data && data.temperatureLabels);
                 self.options.points = data && Array.isArray(data.points) ? data.points : [];
                 self.options.hoverPoint = null;
+                self._buildControls();
                 self._status(self.options.points.length + ' samples loaded.');
                 self._draw();
             });
@@ -162,7 +165,7 @@
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, w, h);
             var points = self.options.points || [];
-            var enabledKeys = Object.keys(self.options.series).filter(function (key) { return self.options.series[key].enabled; });
+            var enabledKeys = Object.keys(self.options.series).filter(function (key) { return self.options.series[key].enabled && !self.options.series[key].hidden; });
             if (points.length === 0 || enabledKeys.length === 0) {
                 self._emptyChart(ctx, w, h, enabledKeys.length === 0 ? 'No temperature series selected.' : 'No history samples in range.');
                 return;
@@ -345,6 +348,12 @@
                     if (typeof saved[key] === 'boolean') series.enabled = saved[key];
                 });
             } catch (err) { }
+        },
+        _applyTemperatureLabels: function (temperatureLabels) {
+            var solar = temperatureLabels && temperatureLabels.solar ? temperatureLabels.solar : {};
+            this.options.series.glacier.label = solar.label || 'Solar';
+            this.options.series.glacier.hidden = solar.show === false;
+            if (this.options.series.glacier.hidden) this.options.series.glacier.enabled = false;
         },
         _saveSeriesState: function () {
             var saved = {};

@@ -2,11 +2,51 @@
 ## What is nodejs-poolController-dashPanel?
 dashPanel is a controller designed to operate using a [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server backend.  You will need to set up your nodejs-poolController server and have it communicating with your pool equipment prior to setting up this server.  Once you have done that you can set up the dashPanel to communicate with that server.
 
+This fork uses semver prerelease versions such as `9.1.0-km.1` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added.
+
 While this project was originally developed using an IntelliCenter control panel it should operate equally well with an IntelliTouch or EasyTouch control panel.
 ![image](https://user-images.githubusercontent.com/47839015/83304160-38a86780-a1b3-11ea-8214-442db6c6bdc4.png)
 
 ## Configuring the dashPanel
 To configure the dashPanel you need to place the url for your [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server in the configuration.  Click the bars menu on the top left of the screen and fill in the ip address and port.  Then press the Apply button.  If this button is grayed out you will need to edit the config.json file manually and enter the settings under the services menu.
+
+## Automations
+The **Automations** panel edits the nodejs-poolController rules engine configuration stored on the backend under `web.rules`. Use it to create rule groups, add rules, define conditions, and choose actions.
+
+The top of the panel also includes temperature-source display controls:
+
+* **Show solar source** controls whether the backend solar temperature source is exposed to Automations and Temperature History.
+* **Solar label** changes the user-facing label. Use this when the controller's solar input is wired to another source, for example `Glacier`.
+
+The underlying backend field remains `solar` for compatibility, even when the visible label is changed.
+
+### Rule groups and active windows
+Each group can have an optional **Active Window**. Leave it disabled for rules that should run all the time.
+
+When **Use active window** is enabled, you can restrict the group by:
+
+* Start date and end date in `MM-DD` format.
+* Start time and end time.
+* Days of the week.
+
+Blank fields mean unrestricted. For example, setting only Monday through Friday limits the group to weekdays at all times. Setting `05-01` through `10-15` limits it to that seasonal date range. The backend also supports date ranges that cross the end of the year and time ranges that cross midnight.
+
+When a group is outside its active window, its rules do not evaluate and `Otherwise` actions do not run. Existing equipment state is left alone.
+
+### Conditions and actions
+Rules are evaluated from top-level pool state such as temperatures, circuit state, feature state, heater state, and schedule state. Temperature conditions include pool, spa, air, solar/glacier, selected body, and dew point.
+
+Actions can set circuits or features, lock circuits/features, disable schedules, or write a log message. `Then` actions run when the rule is true. `Otherwise` actions run when the rule is false, subject to the rule's hysteresis settings.
+
+### Hysteresis
+Use hysteresis when a rule should remain true or false for a period before actions run. This is useful for temperature-based automation where readings can bounce around a threshold. While hysteresis is pending, the rule status line shows the remaining wait time before `Then` or `Otherwise` actions run.
+
+## Temperature History
+The **Temperature History** panel plots recent temperature samples from the backend `/state/tempHistory` API. It can show pool, spa, solar/glacier, air, and dew point series.
+
+Use the series toggles to choose which values are plotted. Dew Point is available when the backend has a pool location configured and can fetch weather data. The solar-source series uses the label configured in Automations and is hidden when **Show solar source** is off.
+
+Move the mouse over the chart area to show a vertical guide line and the values for the nearest sample. The values are displayed above the chart status line and sorted from highest to lowest value for easier comparison.
 
 ## What is Message Manager?
 Message manager allows you to inspect your RS485 communication coming from and going to the [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server.  This tool decodes the messages and displays them in a manner where important chatter on the RS485 connection can be decoded while eliminating the chatter that don't matter.  Special filters can be applied to reduce the information to only the items you are interested in.

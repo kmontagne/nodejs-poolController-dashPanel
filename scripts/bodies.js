@@ -9,11 +9,13 @@
         _initBodies: function(data) {
             var self = this, o = self.options, el = self.element;
             el.empty();
+            o.temperatureLabels = self._temperatureLabels(data);
             var div = $('<div class="picAmbientTemp control-panel-title"></div>');
             div.appendTo(el);
             var d = $('<div><label class="picInline-label picAmbientTemp">Air Temp</label><span class="picAirTemp"></span><label class="picUnitSymbol">&deg;</label><span class="picTempUnits">-</span></div>');
             d.appendTo(div);
-            d = $('<div class="picSolarTempField"><label class="picInline-label picAmbientTemp">Glacier Temp</label><span class="picSolarTemp"></span><label class="picUnitSymbol">&deg;</label><span class="picTempUnits">-</span></div>');
+            d = $('<div class="picSolarTempField"><label class="picInline-label picAmbientTemp"></label><span class="picSolarTemp"></span><label class="picUnitSymbol">&deg;</label><span class="picTempUnits">-</span></div>');
+            d.find('label.picAmbientTemp').text(o.temperatureLabels.solar.label + ' Temp');
             d.appendTo(div);
             if (typeof data !== 'undefined') {
                 el.show();
@@ -37,9 +39,10 @@
         setTemps: function (data) {
             var self = this, o = self.options, el = self.element;
             var tempFmt = $('body').attr('data-controllertype') === 'nixie' ? '#,##0.0' : '#,##0';
+            var showSolar = !o.temperatureLabels || !o.temperatureLabels.solar || o.temperatureLabels.solar.show !== false;
 
             if (typeof data.air !== 'undefined') el.find('span.picAirTemp').text(data.air.format(tempFmt, '--'));
-            if (typeof data.solar !== 'undefined') el.find('span.picSolarTemp').text(data.solar.format(tempFmt, '--'));
+            if (showSolar && typeof data.solar !== 'undefined') el.find('span.picSolarTemp').text(data.solar.format(tempFmt, '--'));
             if (typeof data.units !== 'undefined') {
                 el.find('span.picTempUnits').text(data.units.name);
                 el.attr('data-unitsname', data.units.name);
@@ -50,8 +53,13 @@
                     this.setEquipmentData(body);
                 });
             }
-            if (typeof data.solar === 'undefined') el.find('div.picSolarTempField').hide();
+            if (!showSolar || typeof data.solar === 'undefined') el.find('div.picSolarTempField').hide();
             else el.find('div.picSolarTempField').show();
+        },
+        _temperatureLabels: function (data) {
+            var labels = data && data.temperatureLabels ? data.temperatureLabels : {};
+            var solar = labels.solar || {};
+            return { solar: { show: solar.show !== false, label: solar.label || 'Solar' } };
         }
     });
     $.widget('pic.bodyFilters', {

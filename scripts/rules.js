@@ -28,11 +28,13 @@
             $.when(
                 $.getApiService('config/rules', null),
                 $.getApiService('config/circuit/references?circuits=true&features=true&groups=false&virtual=false', null),
-                $.getApiService('config/options/schedules', null)
-            ).done(function (rulesResult, refsResult, scheduleResult) {
+                $.getApiService('config/options/schedules', null),
+                $.getApiService('config/temperatureLabels', null)
+            ).done(function (rulesResult, refsResult, scheduleResult, labelsResult) {
                 o.rules = self._normalizeRules(rulesResult[0]);
                 o.circuitRefs = refsResult[0] || [];
                 o.schedules = (scheduleResult[0] && scheduleResult[0].schedules) || [];
+                o.temperatureLabels = self._normalizeTemperatureLabels(labelsResult[0]);
                 o.dirty = false;
                 self._syncSelection();
                 self._buildControls();
@@ -70,6 +72,18 @@
                     self._markDirty();
                     self._renderStatus();
                 });
+            $('<label><input type="checkbox" class="picRuleShowSolar"> Show solar source</label>').appendTo(top)
+                .find('input').prop('checked', self._solarTempConfig().show).on('change', function () {
+                    o.temperatureLabels = o.temperatureLabels || self._normalizeTemperatureLabels();
+                    o.temperatureLabels.solar.show = this.checked;
+                    self._markDirty();
+                    self._buildControls();
+                });
+            self._field(top, 'Solar label', $('<input type="text" maxlength="24" class="picRuleSolarLabel">').val(self._solarTempConfig().label).on('change keyup', function () {
+                o.temperatureLabels = o.temperatureLabels || self._normalizeTemperatureLabels();
+                o.temperatureLabels.solar.label = this.value || 'Solar';
+                self._markDirty();
+            }));
             $('<button type="button" class="picRulesSave"><i class="fas fa-save"></i> Save</button>').prop('disabled', o.dirty !== true).appendTo(top).on('click', function () { self._save(); });
             $('<button type="button" class="picRulesCancel"><i class="fas fa-undo"></i> Cancel</button>').prop('disabled', o.dirty !== true).appendTo(top).on('click', function () { self._cancel(); });
             $('<button type="button"><i class="fas fa-code"></i></button>').attr('title', 'Advanced JSON').appendTo(top).on('click', function () {
@@ -282,7 +296,7 @@
             }));
             self._field(box, 'Operator', self._operatorSelect(condition.operator || '>=').on('change', function () { condition.operator = this.value; self._markDirty(); }));
             self._field(box, 'Degrees', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
-            $('<div class="picRuleHelp">Compares Higher temp minus Lower temp. For Glacier, use Pool temp minus Solar/Glacier temp &gt;= the minimum useful cooling difference.</div>').appendTo(box);
+            $('<div class="picRuleHelp">Compares Higher temp minus Lower temp. For cooling sources, use Pool temp minus ' + self._solarTempConfig().label + ' temp &gt;= the minimum useful cooling difference.</div>').appendTo(box);
         },
         _conditionCircuitState: function (box, condition) {
             var self = this, parsed = self._parseStatePath(condition.left, 'circuit');
@@ -478,17 +492,30 @@
             var items = [
                 { v: 'poolTemp', t: 'Pool temp' },
                 { v: 'spaTemp', t: 'Spa temp' },
-                { v: 'solarTemp', t: 'Solar/Glacier temp' },
                 { v: 'airTemp', t: 'Air temp' },
                 { v: 'dewPoint', t: 'Dew point' },
                 { v: 'bodyTemp', t: 'Selected body temp' }
             ];
+            var solar = this._solarTempConfig();
+            if (solar.show) items.splice(2, 0, { v: 'solarTemp', t: solar.label + ' temp' });
             if (includeLegacyDeltas === true) {
-                items.push({ v: 'poolSolarDelta', t: 'Pool - Solar delta' });
-                items.push({ v: 'spaSolarDelta', t: 'Spa - Solar delta' });
-                items.push({ v: 'bodySolarDelta', t: 'Selected body - Solar delta' });
+                if (solar.show) {
+                    items.push({ v: 'poolSolarDelta', t: 'Pool - ' + solar.label + ' delta' });
+                    items.push({ v: 'spaSolarDelta', t: 'Spa - ' + solar.label + ' delta' });
+                    items.push({ v: 'bodySolarDelta', t: 'Selected body - ' + solar.label + ' delta' });
+                }
             }
             return this._select(items, value);
+        },
+        _solarTempConfig: function () {
+            var labels = this.options.temperatureLabels || {};
+            var solar = labels.solar || {};
+            return { show: solar.show !== false, label: solar.label || 'Solar' };
+        },
+        _normalizeTemperatureLabels: function (labels) {
+            labels = labels || {};
+            var solar = labels.solar || {};
+            return { solar: { show: solar.show !== false, label: solar.label || 'Solar' } };
         },
         _refSelect: function (kind, value) {
             var sel = $('<select></select>');
@@ -663,12 +690,15 @@
         },
         _save: function () {
             var self = this;
-            $.putApiService('config/rules', self.options.rules, 'Saving Rules...', function (saved) {
-                self.options.rules = self._normalizeRules(saved);
-                self.options.dirty = false;
-                self._syncSelection();
-                self._buildControls();
-                self._refreshHeaderStatus();
+            $.putApiService('config/temperatureLabels', self.options.temperatureLabels || self._normalizeTemperatureLabels(), 'Saving Rules...', function (labels) {
+                self.options.temperatureLabels = self._normalizeTemperatureLabels(labels);
+                $.putApiService('config/rules', self.options.rules, 'Saving Rules...', function (saved) {
+                    self.options.rules = self._normalizeRules(saved);
+                    self.options.dirty = false;
+                    self._syncSelection();
+                    self._buildControls();
+                    self._refreshHeaderStatus();
+                });
             });
         },
         _isCollapsed: function () {
