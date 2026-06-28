@@ -364,6 +364,8 @@
                     $(':root').css('--picCovers-display', getStorage('--picCovers-display'));
                     if (typeof getStorage('--picRules-display') === 'undefined') setStorage('--picRules-display', $(':root').css('--picRules-display') || 'block');
                     $(':root').css('--picRules-display', getStorage('--picRules-display'));
+                    if (typeof getStorage('--picTempHistory-display') === 'undefined') setStorage('--picTempHistory-display', $(':root').css('--picTempHistory-display') || 'block');
+                    $(':root').css('--picTempHistory-display', getStorage('--picTempHistory-display'));
 
                     if (typeof getStorage('--show-time-remaining') === 'undefined') setStorage('--show-time-remaining', $(':root').css('--show-time-remaining'));
                     $(':root').css('--show-time-remaining', getStorage('--show-time-remaining'));
@@ -387,6 +389,7 @@
                         }
                     });
                     $('div.picRules').appendTo('div.dashContainer');
+                    $('div.picTempHistory').appendTo('div.dashContainer');
                 })
                     .done(function (status, xhr) { console.log('Done:' + status); })
                     .fail(function (xhr, status, error) {

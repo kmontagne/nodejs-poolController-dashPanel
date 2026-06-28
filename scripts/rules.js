@@ -46,9 +46,24 @@
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             el.empty().addClass('picRulesEditor').toggleClass('dirty', o.dirty === true);
+            el.toggleClass('collapsed', self._isCollapsed());
             var title = $('<div class="picCircuitTitle control-panel-title picRulesTitle"></div>').appendTo(el);
             $('<span><i class="fas fa-bolt"></i> Automations</span>').appendTo(title);
-            var top = $('<div class="picRulesTop"></div>').appendTo(el);
+            $('<span class="picRulesDirtyPill">Unsaved</span>').appendTo(title).toggle(o.dirty === true);
+            $('<button type="button" class="picRulesCollapse"></button>')
+                .attr('title', self._isCollapsed() ? 'Expand Automations' : 'Collapse Automations')
+                .append($('<i></i>').addClass(self._isCollapsed() ? 'fas fa-chevron-down' : 'fas fa-chevron-up'))
+                .appendTo(title)
+                .on('click', function () {
+                    self._setCollapsed(!self._isCollapsed());
+                    self._buildControls();
+                });
+            var content = $('<div class="picRulesContent"></div>').appendTo(el);
+            if (self._isCollapsed()) {
+                self._refreshHeaderStatus();
+                return;
+            }
+            var top = $('<div class="picRulesTop"></div>').appendTo(content);
             $('<label><input type="checkbox" class="ruleEngineEnabled"> Enable rules engine</label>').appendTo(top)
                 .find('input').prop('checked', o.rules.enabled !== false).on('change', function () {
                     o.rules.enabled = this.checked;
@@ -60,12 +75,12 @@
             $('<button type="button"><i class="fas fa-code"></i></button>').attr('title', 'Advanced JSON').appendTo(top).on('click', function () {
                 self._showJsonEditor();
             });
-            $('<div class="picRulesHint">Rules are saved to nodejs-poolController config under web.rules. Use If conditions and Then actions to describe automation logic.</div>').appendTo(el);
-            $('<div class="picRulesDirtyNotice">Unsaved changes</div>').appendTo(el).toggle(o.dirty === true);
-            $('<div class="picRulesStatus"></div>').appendTo(el);
+            $('<div class="picRulesHint">Rules are saved to nodejs-poolController config under web.rules. Use If conditions and Then actions to describe automation logic.</div>').appendTo(content);
+            $('<div class="picRulesDirtyNotice">Unsaved changes</div>').appendTo(content).toggle(o.dirty === true);
+            $('<div class="picRulesStatus"></div>').appendTo(content);
             self._renderStatus();
 
-            var shell = $('<div class="picRulesShell"></div>').appendTo(el);
+            var shell = $('<div class="picRulesShell"></div>').appendTo(content);
             self._buildGroupList(shell);
             self._buildEditor(shell);
         },
@@ -454,6 +469,7 @@
             this.element.find('button.picRulesSave').toggleClass('dirty', this.options.dirty).prop('disabled', !this.options.dirty);
             this.element.find('button.picRulesCancel').prop('disabled', !this.options.dirty);
             this.element.find('div.picRulesDirtyNotice').toggle(this.options.dirty);
+            this.element.find('span.picRulesDirtyPill').toggle(this.options.dirty);
         },
         _cancel: function () {
             if (this.options.dirty !== true) return;
@@ -603,6 +619,12 @@
                 self._buildControls();
                 self._refreshHeaderStatus();
             });
+        },
+        _isCollapsed: function () {
+            return getStorage('picRulesCollapsed', 'false') === 'true';
+        },
+        _setCollapsed: function (collapsed) {
+            setStorage('picRulesCollapsed', collapsed === true ? 'true' : 'false');
         }
     });
 })(jQuery);
