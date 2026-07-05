@@ -405,17 +405,17 @@ div.dashOuter[data-panel=configuration] > div.dashContainer {
 
 div.picRules {
   display: var(--picRules-display, block);
-  flex: 0 0 47rem;
+  flex: 0 0 auto;
   max-width: calc(100vw - 2rem);
-  order: 999;
+  order: var(--picRules-order, 300);
   width: 47rem !important;
 }
 
 div.picTempHistory {
   display: var(--picTempHistory-display, block);
-  flex: 0 0 47rem;
+  flex: 0 0 auto;
   max-width: calc(100vw - 2rem);
-  order: 1000;
+  order: var(--picTempHistory-order, 305);
   width: 47rem !important;
 }
 

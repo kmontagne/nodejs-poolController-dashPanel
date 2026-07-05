@@ -364,14 +364,18 @@
                     $(':root').css('--picCovers-display', getStorage('--picCovers-display'));
                     if (typeof getStorage('--picRules-display') === 'undefined') setStorage('--picRules-display', $(':root').css('--picRules-display') || 'block');
                     $(':root').css('--picRules-display', getStorage('--picRules-display'));
+                    if (typeof getStorage('--picRules-order') === 'undefined') setStorage('--picRules-order', $(':root').css('--picRules-order') || 200);
+                    $(':root').css('--picRules-order', getStorage('--picRules-order'));
                     if (typeof getStorage('--picTempHistory-display') === 'undefined') setStorage('--picTempHistory-display', $(':root').css('--picTempHistory-display') || 'block');
                     $(':root').css('--picTempHistory-display', getStorage('--picTempHistory-display'));
+                    if (typeof getStorage('--picTempHistory-order') === 'undefined') setStorage('--picTempHistory-order', $(':root').css('--picTempHistory-order') || 205);
+                    $(':root').css('--picTempHistory-order', getStorage('--picTempHistory-order'));
 
                     if (typeof getStorage('--show-time-remaining') === 'undefined') setStorage('--show-time-remaining', $(':root').css('--show-time-remaining'));
                     $(':root').css('--show-time-remaining', getStorage('--show-time-remaining'));
 
                     // put elements in correct container div
-                    let arr = ['picBodies', 'picCircuits', 'picLights', 'picSchedules', 'picChemistry', 'picPumps', 'picVirtualCircuits', 'picFilters', 'picValves', 'picCovers'];
+                    let arr = ['picBodies', 'picCircuits', 'picLights', 'picSchedules', 'picChemistry', 'picPumps', 'picVirtualCircuits', 'picFilters', 'picValves', 'picCovers', 'picRules', 'picTempHistory'];
                     arr.forEach(id => {
                         console.log(id);
                         let el = $(`.${id}`);
@@ -388,8 +392,6 @@
                             $(el).appendTo('.container1');
                         }
                     });
-                    $('div.picRules').appendTo('div.dashContainer');
-                    $('div.picTempHistory').appendTo('div.dashContainer');
                 })
                     .done(function (status, xhr) { console.log('Done:' + status); })
                     .fail(function (xhr, status, error) {
