@@ -1,0 +1,17 @@
+# Changelog
+
+## 9.1.0-km.2 - 2026-07-05
+
+### Fixed
+
+- Added Automations and Temperature History to the dashboard Order of Elements system.
+- Fixed minimized Automations and Temperature History panels leaving large empty space.
+- Fixed Temperature History reserving extra blank space below the chart.
+
+## 9.1.0-km.1 - 2026-06-28
+
+### Added
+
+- Added Automations panel for editing backend rule groups, conditions, actions, hysteresis, and active windows.
+- Added Temperature History panel with charting for pool, spa, solar/glacier, air, and dew point values.
+- Added solar-source visibility and label controls for setups that repurpose the solar temperature input, such as Glacier cooler monitoring.
