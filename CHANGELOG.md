@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.3 - 2026-07-08
+
+### Added
+
+- Added Avg / Min / Max summaries for enabled Temperature History curves over the selected range.
+
 ## 9.1.0-km.2 - 2026-07-05
 
 ### Fixed

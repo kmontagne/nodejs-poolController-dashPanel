@@ -86,11 +86,14 @@
                     .append($('<input type="checkbox">').prop('checked', series.enabled).on('change', function () {
                         series.enabled = this.checked;
                         self._saveSeriesState();
+                        self._renderStats();
                         self._draw();
                     }))
                     .append($('<span></span>').css('border-color', series.color).text(series.label))
                     .appendTo(toggles);
             });
+            $('<div class="picTempHistoryStats"></div>').appendTo(content);
+            self._renderStats();
             $('<div class="picTempHistoryStatus"></div>').appendTo(content);
             $('<canvas class="picTempHistoryChart" width="720" height="320"></canvas>').appendTo(content)
                 .on('mousemove', function (evt) { self._handleHover(evt); })
@@ -197,6 +200,51 @@
                 self._drawSeries(ctx, points, key, self.options.series[key].color, pad, w, h, minTs, maxTs, minTemp, maxTemp);
             });
             self._drawHover(ctx);
+        },
+        _renderStats: function () {
+            var panel = this.element.find('div.picTempHistoryStats').empty();
+            if (panel.length === 0) return;
+            var points = this.options.points || [];
+            var keys = this._enabledSeriesKeys();
+            $('<span class="picTempHistoryStatsLabel"></span>').text('Avg / Min / Max:').appendTo(panel);
+            if (points.length === 0 || keys.length === 0) {
+                $('<span class="picTempHistoryStatsEmpty"></span>').text(keys.length === 0 ? 'No series selected.' : 'No samples loaded.').appendTo(panel);
+                return;
+            }
+            var self = this;
+            keys.forEach(function (key) {
+                var stats = self._seriesStats(key);
+                if (!stats) return;
+                $('<span class="picTempHistoryStat"></span>')
+                    .append($('<i></i>').css('background-color', self.options.series[key].color))
+                    .append(document.createTextNode(self.options.series[key].label + ': ' + self._formatTemp(stats.avg) + ' / ' + self._formatTemp(stats.min) + ' / ' + self._formatTemp(stats.max)))
+                    .appendTo(panel);
+            });
+            if (panel.find('span.picTempHistoryStat').length === 0) {
+                $('<span class="picTempHistoryStatsEmpty"></span>').text('No selected temperature values in range.').appendTo(panel);
+            }
+        },
+        _enabledSeriesKeys: function () {
+            return Object.keys(this.options.series).filter(function (key) {
+                var series = this.options.series[key];
+                return series.enabled && !series.hidden;
+            }, this);
+        },
+        _seriesStats: function (key) {
+            var sum = 0, count = 0, min, max;
+            (this.options.points || []).forEach(function (point) {
+                var value = point[key];
+                if (typeof value !== 'number' || isNaN(value)) return;
+                sum += value;
+                count++;
+                min = typeof min === 'number' ? Math.min(min, value) : value;
+                max = typeof max === 'number' ? Math.max(max, value) : value;
+            });
+            if (count === 0) return null;
+            return { avg: sum / count, min: min, max: max };
+        },
+        _formatTemp: function (value) {
+            return value.toFixed(1) + 'F';
         },
         _drawAxes: function (ctx, w, h, pad, minTs, maxTs, minTemp, maxTemp) {
             ctx.strokeStyle = '#bbb';
