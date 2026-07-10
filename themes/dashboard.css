@@ -411,6 +411,14 @@ div.picRules {
   width: 47rem !important;
 }
 
+div.picRuleLog {
+  display: var(--picRuleLog-display, block);
+  flex: 0 0 auto;
+  max-width: calc(100vw - 2rem);
+  order: var(--picRuleLog-order, 303);
+  width: 47rem !important;
+}
+
 div.picTempHistory {
   display: var(--picTempHistory-display, block);
   flex: 0 0 auto;
@@ -474,7 +482,15 @@ div.picTempHistoryEditor {
   width: 100%;
 }
 
+div.picRuleLogEditor {
+  width: 100%;
+}
+
 div.picTempHistoryEditor.collapsed {
+  padding-bottom: 0.25rem;
+}
+
+div.picRuleLogEditor.collapsed {
   padding-bottom: 0.25rem;
 }
 
@@ -493,6 +509,21 @@ div.picTempHistoryTitle i {
   margin-right: 0.3rem;
 }
 
+div.picRuleLogTitle {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+}
+
+div.picRuleLogTitle > span:first-child {
+  flex: 1 1 auto;
+}
+
+div.picRuleLogTitle i {
+  color: #4f6f8f;
+  margin-right: 0.3rem;
+}
+
 button.picTempHistoryCollapse {
   align-items: center;
   display: inline-flex;
@@ -505,6 +536,114 @@ button.picTempHistoryCollapse {
 
 button.picTempHistoryCollapse i {
   margin-right: 0;
+}
+
+button.picRuleLogCollapse {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.45rem;
+  justify-content: center;
+  min-width: 1.7rem;
+  padding: 0;
+}
+
+button.picRuleLogCollapse i {
+  margin-right: 0;
+}
+
+div.picRuleLogContent {
+  border-top: solid 3px #4f6f8f;
+  padding-top: 0.45rem;
+}
+
+div.picRuleLogControls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+label.picRuleLogDetails {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  min-height: 1.6rem;
+}
+
+div.picRuleLogStatus {
+  color: #555;
+  font-size: 0.85rem;
+  margin-top: 0.45rem;
+}
+
+div.picRuleLogEvents {
+  margin-top: 0.45rem;
+}
+
+div.picRuleLogEvent {
+  border-top: solid 1px #ddd;
+  padding: 0.45rem 0;
+}
+
+div.picRuleLogEventHead {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+}
+
+span.picRuleLogTime {
+  color: #333;
+  font-weight: bold;
+}
+
+span.picRuleLogState {
+  border-radius: 3px;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: bold;
+  padding: 0.08rem 0.35rem;
+  text-transform: uppercase;
+}
+
+span.picRuleLogState.then {
+  background: #2f8f46;
+}
+
+span.picRuleLogState.otherwise {
+  background: #7a4b00;
+}
+
+span.picRuleLogRule {
+  color: #222;
+}
+
+span.picRuleLogReason {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+div.picRuleLogSummary {
+  color: #555;
+  font-size: 0.86rem;
+  margin-top: 0.2rem;
+}
+
+div.picRuleLogActionDetails {
+  color: #444;
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+  padding-left: 0.7rem;
+}
+
+div.picRuleLogActionDetail {
+  margin-top: 0.12rem;
+}
+
+div.picRuleLogEmpty {
+  color: #666;
+  padding: 0.5rem 0;
 }
 
 div.picTempHistoryContent {

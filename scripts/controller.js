@@ -1383,6 +1383,11 @@
         _setOrder: function () {
             var self = this, o = self.options, el = self.element;
             var grp = $('<fieldset></fieldset>').attr('id', 'orderOfElements');
+            let orderLabels = {
+                picRules: 'Automations',
+                picRuleLog: 'Rule Log',
+                picTempHistory: 'Charting'
+            };
             let _setDefaultOrder = function () {
                 col1ullg.empty().text('Column 1');
                 col2ullg.empty().text('Column 2');
@@ -1408,14 +1413,14 @@
                     $(':root').css('--dashContainer3-display', 'none');
                 }
 
-                let arr = ['picBodies', 'picCircuits', 'picLights', 'picSchedules', 'picChemistry', 'picPumps', 'picVirtualCircuits', 'picFilters', 'picValves', 'picCovers', 'picRules', 'picTempHistory'];
+                let arr = ['picBodies', 'picCircuits', 'picLights', 'picSchedules', 'picChemistry', 'picPumps', 'picVirtualCircuits', 'picFilters', 'picValves', 'picCovers', 'picRules', 'picRuleLog', 'picTempHistory'];
 
                 arr.forEach(id => {
                     let el = $(`.${id}`);
                     let elVarName = '';
                     let disp = '';
                     elVarName = `--${id}-order`;
-                    disp = id.substring(3);
+                    disp = orderLabels[id] || id.substring(3);
                     console.log(elVarName);
                     // Logic for Large Screen Format
                     let orderLg = getStorage(elVarName, parseInt($(':root').css(elVarName)));

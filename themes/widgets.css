@@ -10,6 +10,7 @@
     --picValves-order: 20;
     --picCovers-order: 22;
     --picRules-order: 200;
+    --picRuleLog-order: 203;
     --picTempHistory-order: 205;
     --picBodies-display: block;
     --picCircuits-display: block;
@@ -22,6 +23,7 @@
     --picValves-display: block;
     --picCovers-display: block;
     --picRules-display: block;
+    --picRuleLog-display: block;
     --picTempHistory-display: block;
     --number-of-columns: 2;
     --dashContainer2-display: block;
@@ -314,6 +316,10 @@ div.picCovers {
 div.picRules {
     order: var(--picRules-order);
     display: var(--picRules-display) !important;
+}
+div.picRuleLog {
+    order: var(--picRuleLog-order);
+    display: var(--picRuleLog-display) !important;
 }
 div.picTempHistory {
     order: var(--picTempHistory-order);

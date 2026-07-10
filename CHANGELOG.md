@@ -1,5 +1,12 @@
 # Changelog
 
+## 9.1.0-km.4 - 2026-07-08
+
+### Added
+
+- Added collapsed-by-default Rule Log panel between Automations and Temperature History.
+- Added optional action-detail display for persisted backend rule action events.
+
 ## 9.1.0-km.3 - 2026-07-08
 
 ### Added
