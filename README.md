@@ -13,7 +13,7 @@ To configure the dashPanel you need to place the url for your [nodejs-poolContro
 ## Automations
 The **Automations** panel edits the nodejs-poolController rules engine configuration stored on the backend under `web.rules`. Use it to create rule groups, add rules, define conditions, and choose actions.
 
-The panel participates in the dashboard **Order of Elements** settings. It can be moved between columns, hidden, or collapsed. When collapsed, it shrinks to its title row instead of leaving a large empty panel.
+The panel appears in a dedicated automation/charting row below the original dashboard columns, followed by Rule Log and Temperature History. When collapsed, it shrinks to its title row instead of leaving a large empty panel.
 
 The top of the panel also includes temperature-source display controls:
 
@@ -44,7 +44,7 @@ Actions can set circuits or features, lock circuits/features, disable schedules,
 Use hysteresis when a rule should remain true or false for a period before actions run. This is useful for temperature-based automation where readings can bounce around a threshold. While hysteresis is pending, the rule status line shows the remaining wait time before `Then` or `Otherwise` actions run.
 
 ## Rule Log
-The **Rule Log** panel shows recent rule action events from the backend `/config/rules/log` API. It is collapsed by default, ordered between Automations and Temperature History by default, and only loads entries when expanded.
+The **Rule Log** panel shows recent rule action events from the backend `/config/rules/log` API. It is collapsed by default, appears between Automations and Temperature History in the dedicated automation/charting row, and only loads entries when expanded.
 
 The default view shows one summary row for each rule action event, including the time, Then/Otherwise branch, rule group, rule name, and evaluation reason. Use **Show action details** to include the individual action results that were persisted with the event.
 
@@ -53,7 +53,7 @@ The **Temperature History** panel plots recent temperature samples from the back
 
 Use the series toggles to choose which values are plotted. Dew Point is available when the backend has a pool location configured and can fetch weather data. The solar-source series uses the label configured in Automations and is hidden when **Show solar source** is off.
 
-The panel participates in the dashboard **Order of Elements** settings. It can be moved between columns, hidden, or collapsed. When collapsed, it shrinks to its title row. By default, Automations is ordered above Temperature History.
+The panel appears below Rule Log in the dedicated automation/charting row. When collapsed, it shrinks to its title row.
 
 Below the series toggles, the panel shows `Avg / Min / Max:` for each enabled visible curve over the selected date/time range. Values are listed in the same order as the series toggles.
 
