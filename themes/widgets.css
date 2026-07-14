@@ -9,9 +9,9 @@
     --picFilters-order: 17;
     --picValves-order: 20;
     --picCovers-order: 22;
-    --picRules-order: 200;
-    --picRuleLog-order: 203;
-    --picTempHistory-order: 205;
+    --picRules-order: 25;
+    --picRuleLog-order: 28;
+    --picTempHistory-order: 30;
     --picBodies-display: block;
     --picCircuits-display: block;
     --picLights-display: block;
@@ -54,9 +54,13 @@ div.picPickList.disabled > div.picPickList-drop {
     pointer-events: none;
 }
 
-div.container1, div.container2, div.container3 {
+div.container1, div.container2, div.container3, div.containerAutomation {
     display: flex;
     flex-flow: column;
+}
+
+div.containerAutomation {
+    flex: 1 0 100%;
 }
 div.picAppSettings {
     max-width: unset;

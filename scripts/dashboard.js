@@ -364,36 +364,31 @@
                     $(':root').css('--picCovers-display', getStorage('--picCovers-display'));
                     if (typeof getStorage('--picRules-display') === 'undefined') setStorage('--picRules-display', $(':root').css('--picRules-display') || 'block');
                     $(':root').css('--picRules-display', getStorage('--picRules-display'));
-                    if (typeof getStorage('--picRules-order') === 'undefined') setStorage('--picRules-order', $(':root').css('--picRules-order') || 200);
+                    if (typeof getStorage('--picRules-order') === 'undefined') setStorage('--picRules-order', $(':root').css('--picRules-order') || 25);
                     $(':root').css('--picRules-order', getStorage('--picRules-order'));
                     if (typeof getStorage('--picRuleLog-display') === 'undefined') setStorage('--picRuleLog-display', $(':root').css('--picRuleLog-display') || 'block');
                     $(':root').css('--picRuleLog-display', getStorage('--picRuleLog-display'));
-                    if (typeof getStorage('--picRuleLog-order') === 'undefined') setStorage('--picRuleLog-order', $(':root').css('--picRuleLog-order') || 203);
+                    if (typeof getStorage('--picRuleLog-order') === 'undefined') setStorage('--picRuleLog-order', $(':root').css('--picRuleLog-order') || 28);
                     $(':root').css('--picRuleLog-order', getStorage('--picRuleLog-order'));
                     if (typeof getStorage('--picTempHistory-display') === 'undefined') setStorage('--picTempHistory-display', $(':root').css('--picTempHistory-display') || 'block');
                     $(':root').css('--picTempHistory-display', getStorage('--picTempHistory-display'));
-                    if (typeof getStorage('--picTempHistory-order') === 'undefined') setStorage('--picTempHistory-order', $(':root').css('--picTempHistory-order') || 205);
+                    if (typeof getStorage('--picTempHistory-order') === 'undefined') setStorage('--picTempHistory-order', $(':root').css('--picTempHistory-order') || 30);
                     $(':root').css('--picTempHistory-order', getStorage('--picTempHistory-order'));
-                    if (getStorage('dashAutomationPanelOrderVersion') !== 'km4-rule-log') {
-                        let order = parseInt(getStorage('--picRules-order'), 10);
-                        if (isNaN(order) || order >= 400) order = 200;
-                        else if (order >= 200 && order > 394) order = 390;
-                        else if (order >= 100 && order > 194) order = 190;
-                        else if (order > 94) order = 90;
-                        setStorage('--picRules-order', order);
-                        setStorage('--picRuleLog-order', order + 3);
-                        setStorage('--picTempHistory-order', order + 5);
-                        $(':root').css('--picRules-order', order);
-                        $(':root').css('--picRuleLog-order', order + 3);
-                        $(':root').css('--picTempHistory-order', order + 5);
-                        setStorage('dashAutomationPanelOrderVersion', 'km4-rule-log');
+                    if (getStorage('dashAutomationPanelOrderVersion') !== 'km4-rule-log-column1') {
+                        setStorage('--picRules-order', 25);
+                        setStorage('--picRuleLog-order', 28);
+                        setStorage('--picTempHistory-order', 30);
+                        $(':root').css('--picRules-order', 25);
+                        $(':root').css('--picRuleLog-order', 28);
+                        $(':root').css('--picTempHistory-order', 30);
+                        setStorage('dashAutomationPanelOrderVersion', 'km4-rule-log-column1');
                     }
 
                     if (typeof getStorage('--show-time-remaining') === 'undefined') setStorage('--show-time-remaining', $(':root').css('--show-time-remaining'));
                     $(':root').css('--show-time-remaining', getStorage('--show-time-remaining'));
 
                     // put elements in correct container div
-                    let arr = ['picBodies', 'picCircuits', 'picLights', 'picSchedules', 'picChemistry', 'picPumps', 'picVirtualCircuits', 'picFilters', 'picValves', 'picCovers', 'picRules', 'picRuleLog', 'picTempHistory'];
+                    let arr = ['picBodies', 'picCircuits', 'picLights', 'picSchedules', 'picChemistry', 'picPumps', 'picVirtualCircuits', 'picFilters', 'picValves', 'picCovers'];
                     arr.forEach(id => {
                         console.log(id);
                         let el = $(`.${id}`);
@@ -409,6 +404,12 @@
                         else {
                             $(el).appendTo('.container1');
                         }
+                    });
+                    ['picRules', 'picRuleLog', 'picTempHistory'].forEach(id => {
+                        let el = $(`.${id}`);
+                        let elVarName = `--${id}-order`;
+                        el.css('order', getStorage(elVarName));
+                        $(el).appendTo('.containerAutomation');
                     });
                 })
                     .done(function (status, xhr) { console.log('Done:' + status); })

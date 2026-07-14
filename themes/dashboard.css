@@ -395,6 +395,10 @@ div.dashContainer > div > div.control-panel {
   width: 23.5rem;
 }
 
+div.containerAutomation {
+  align-items: flex-start;
+}
+
 div.dashOuter[data-panel=dashboard] > div.configContainer {
   display: none;
 }
@@ -407,7 +411,7 @@ div.picRules {
   display: var(--picRules-display, block);
   flex: 0 0 auto;
   max-width: calc(100vw - 2rem);
-  order: var(--picRules-order, 300);
+  order: var(--picRules-order, 25);
   width: 47rem !important;
 }
 
@@ -415,7 +419,7 @@ div.picRuleLog {
   display: var(--picRuleLog-display, block);
   flex: 0 0 auto;
   max-width: calc(100vw - 2rem);
-  order: var(--picRuleLog-order, 303);
+  order: var(--picRuleLog-order, 28);
   width: 47rem !important;
 }
 
@@ -423,7 +427,7 @@ div.picTempHistory {
   display: var(--picTempHistory-display, block);
   flex: 0 0 auto;
   max-width: calc(100vw - 2rem);
-  order: var(--picTempHistory-order, 305);
+  order: var(--picTempHistory-order, 30);
   width: 47rem !important;
 }
 
