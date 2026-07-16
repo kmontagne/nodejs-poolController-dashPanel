@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.5 - 2026-07-16
+
+### Changed
+
+- Widened Temperature History series color markers for easier legend scanning.
+
 ## 9.1.0-km.4 - 2026-07-08
 
 ### Added

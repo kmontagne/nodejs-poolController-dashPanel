@@ -2,7 +2,7 @@
 ## What is nodejs-poolController-dashPanel?
 dashPanel is a controller designed to operate using a [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server backend.  You will need to set up your nodejs-poolController server and have it communicating with your pool equipment prior to setting up this server.  Once you have done that you can set up the dashPanel to communicate with that server.
 
-This fork uses semver prerelease versions such as `9.1.0-km.4` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
+This fork uses semver prerelease versions such as `9.1.0-km.5` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 While this project was originally developed using an IntelliCenter control panel it should operate equally well with an IntelliTouch or EasyTouch control panel.
 ![image](https://user-images.githubusercontent.com/47839015/83304160-38a86780-a1b3-11ea-8214-442db6c6bdc4.png)
@@ -52,6 +52,8 @@ The default view shows one summary row for each rule action event, including the
 The **Temperature History** panel plots recent temperature samples from the backend `/state/tempHistory` API. It can show pool, spa, solar/glacier, air, and dew point series.
 
 Use the series toggles to choose which values are plotted. Dew Point is available when the backend has a pool location configured and can fetch weather data. The solar-source series uses the label configured in Automations and is hidden when **Show solar source** is off.
+
+Each series toggle includes a wide color marker that matches the plotted curve, making the legend easier to scan before choosing which values to display.
 
 The panel appears below Rule Log in the dedicated automation/charting row. When collapsed, it shrinks to its title row.
 
