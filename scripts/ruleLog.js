@@ -71,8 +71,8 @@
                 var item = $('<div class="picRuleLogEvent"></div>').appendTo(list);
                 var head = $('<div class="picRuleLogEventHead"></div>').appendTo(item);
                 $('<span class="picRuleLogTime"></span>').text(self._formatTime(event.ts)).appendTo(head);
-                $('<span class="picRuleLogState"></span>').addClass(event.state === 'then' ? 'then' : 'otherwise')
-                    .text(event.state === 'then' ? 'Then' : 'Otherwise').appendTo(head);
+                $('<span class="picRuleLogState"></span>').addClass(self._stateClass(event.state))
+                    .text(self._stateLabel(event.state)).appendTo(head);
                 $('<span class="picRuleLogRule"></span>').text((event.groupName || event.groupId || 'Rule Group') + ' / ' + (event.ruleName || event.ruleId || 'Rule')).appendTo(head);
                 $('<span class="picRuleLogReason"></span>').text(event.reason || '').appendTo(head);
                 $('<div class="picRuleLogSummary"></div>').text(event.summary || '').appendTo(item);
@@ -102,6 +102,17 @@
         },
         _formatTime: function (ts) {
             return typeof ts === 'number' ? new Date(ts).toLocaleString() : '';
+        },
+        _stateClass: function (state) {
+            if (state === 'then' || state === 'otherwise' || state === 'started' || state === 'stopped') return state;
+            return 'other';
+        },
+        _stateLabel: function (state) {
+            if (state === 'then') return 'Then';
+            if (state === 'otherwise') return 'Otherwise';
+            if (state === 'started') return 'Started';
+            if (state === 'stopped') return 'Stopped';
+            return state || 'Event';
         }
     });
 })(jQuery);

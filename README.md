@@ -2,7 +2,7 @@
 ## What is nodejs-poolController-dashPanel?
 dashPanel is a controller designed to operate using a [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server backend.  You will need to set up your nodejs-poolController server and have it communicating with your pool equipment prior to setting up this server.  Once you have done that you can set up the dashPanel to communicate with that server.
 
-This fork uses semver prerelease versions such as `9.1.0-km.5` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
+This fork uses semver prerelease versions such as `9.1.0-km.6` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 While this project was originally developed using an IntelliCenter control panel it should operate equally well with an IntelliTouch or EasyTouch control panel.
 ![image](https://user-images.githubusercontent.com/47839015/83304160-38a86780-a1b3-11ea-8214-442db6c6bdc4.png)
@@ -46,7 +46,7 @@ Use hysteresis when a rule should remain true or false for a period before actio
 ## Rule Log
 The **Rule Log** panel shows recent rule action events from the backend `/config/rules/log` API. It is collapsed by default, appears between Automations and Temperature History in the dedicated automation/charting row, and only loads entries when expanded.
 
-The default view shows one summary row for each rule action event, including the time, Then/Otherwise branch, rule group, rule name, and evaluation reason. Use **Show action details** to include the individual action results that were persisted with the event.
+The default view shows one summary row for each rule action event, including the time, Then/Otherwise branch, rule group, rule name, and evaluation reason. It also shows rule engine lifecycle entries as Started and Stopped events, so the log reflects when automation was active. Use **Show action details** to include the individual action results that were persisted with the event.
 
 ## Temperature History
 The **Temperature History** panel plots recent temperature samples from the backend `/state/tempHistory` API. It can show pool, spa, solar/glacier, air, and dew point series.

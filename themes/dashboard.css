@@ -619,6 +619,18 @@ span.picRuleLogState.otherwise {
   background: #7a4b00;
 }
 
+span.picRuleLogState.started {
+  background: #1f6fb2;
+}
+
+span.picRuleLogState.stopped {
+  background: #666;
+}
+
+span.picRuleLogState.other {
+  background: #555;
+}
+
 span.picRuleLogRule {
   color: #222;
 }

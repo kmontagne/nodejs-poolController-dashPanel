@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.6 - 2026-07-20
+
+### Changed
+
+- Updated Rule Log display to show rule engine lifecycle entries as Started and Stopped events.
+
 ## 9.1.0-km.5 - 2026-07-16
 
 ### Changed
