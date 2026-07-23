@@ -188,7 +188,7 @@
         },
         _buildRuleEditor: function (editor, group, rule) {
             var self = this;
-            self._field(editor, 'Rule name', $('<input type="text">').val(rule.name || '').on('change keyup', function () {
+            self._field(editor, 'Rule name', $('<input type="text" class="picRuleNameInput">').val(rule.name || '').on('change keyup', function () {
                 rule.name = this.value;
                 self._markDirty();
                 editor.find('button.picRuleTab.selected span').text(rule.name || rule.id);
@@ -456,7 +456,7 @@
             self.element.find('div.picRuleEvalStatus')
                 .removeClass('matched notmatched pending inactive')
                 .addClass(ruleStatus.active ? ruleStatus.pending ? 'pending' : ruleStatus.matched ? 'matched' : 'notmatched' : 'inactive')
-                .text(self._ruleStatusText(ruleStatus, groupStatus))
+                .text(self._ruleStatusText(ruleStatus, groupStatus, rule))
                 .toggle(true);
             for (var i = 0; i < ruleStatus.conditions.length; i++) {
                 var condition = ruleStatus.conditions[i];
@@ -487,7 +487,7 @@
             }
             return null;
         },
-        _ruleStatusText: function (ruleStatus, groupStatus) {
+        _ruleStatusText: function (ruleStatus, groupStatus, rule) {
             if (!ruleStatus.active) {
                 var reason = (groupStatus && groupStatus.inactiveReason) || ruleStatus.inactiveReason;
                 if (reason === 'outsideDateRange') return 'Rule group is outside its active date range.';
@@ -499,7 +499,46 @@
             if (ruleStatus.pending) {
                 return 'Hysteresis pending: waiting ' + ruleStatus.pending.remainingSeconds + ' sec before ' + (ruleStatus.pending.targetState ? 'Then' : 'Otherwise') + ' actions run.';
             }
-            return ruleStatus.matched ? 'Rule conditions are currently true.' : 'Rule conditions are currently false.';
+            if (ruleStatus.matched) return 'Rule conditions are currently true; Then actions are allowed to run.';
+            var reasonText = this._firstUnmatchedConditionText(ruleStatus, rule);
+            return reasonText ? 'Rule is not true: ' + reasonText + '.' : 'Rule conditions are currently false; Then actions will not run.';
+        },
+        _firstUnmatchedConditionText: function (ruleStatus, rule) {
+            if (!ruleStatus || !rule || !Array.isArray(ruleStatus.conditions)) return '';
+            var sourceConditions = rule.conditions || [];
+            for (var i = 0; i < ruleStatus.conditions.length; i++) {
+                if (ruleStatus.conditions[i].matched) continue;
+                return this._conditionReasonText(sourceConditions[ruleStatus.conditions[i].index], ruleStatus.conditions[i]);
+            }
+            return '';
+        },
+        _conditionReasonText: function (condition, status) {
+            var left = condition && condition.left;
+            var actual = status ? status.left : undefined;
+            if (left === 'poolTemp') return 'pool temp is ' + this._formatStatusValue(actual) + 'F';
+            if (left === 'spaTemp') return 'spa temp is ' + this._formatStatusValue(actual) + 'F';
+            if (left === 'airTemp') return 'air temp is ' + this._formatStatusValue(actual) + 'F';
+            if (left === 'dewPoint') return 'dew point is ' + this._formatStatusValue(actual) + 'F';
+            if (left === 'poolSolarDelta') return 'Pool - ' + this._solarTempConfig().label + ' delta is ' + this._formatStatusValue(actual) + 'F';
+            if (left === 'rule:stableMinutes') return 'stable time is ' + this._formatStatusValue(actual) + ' minutes';
+            if (left === 'rule:stableSeconds') return 'stable time is ' + this._formatStatusValue(actual) + ' seconds';
+            if (typeof left === 'string' && left.indexOf('circuit:') === 0) return this._equipmentConditionReason(left, actual, 'circuit');
+            if (typeof left === 'string' && left.indexOf('feature:') === 0) return this._equipmentConditionReason(left, actual, 'feature');
+            return String(left || 'condition') + ' evaluated to ' + this._formatStatusValue(actual);
+        },
+        _equipmentConditionReason: function (left, actual, fallbackKind) {
+            var parsed = this._parseStatePath(left, fallbackKind);
+            var ref = this._refByKindAndId(parsed.kind, parsed.id);
+            var name = ref && ref.name ? ref.name : (parsed.kind === 'feature' ? 'Feature ' : 'Circuit ') + parsed.id;
+            if (left.indexOf(':runtimeMinutes') > -1) return name + ' runtime is ' + this._formatStatusValue(actual) + ' minutes';
+            if (left.indexOf(':runtimeSeconds') > -1) return name + ' runtime is ' + this._formatStatusValue(actual) + ' seconds';
+            return name + ' is ' + (actual === true ? 'on' : actual === false ? 'off' : this._formatStatusValue(actual));
+        },
+        _formatStatusValue: function (value) {
+            if (typeof value === 'number') return Math.round(value * 10) / 10;
+            if (typeof value === 'undefined') return 'unavailable';
+            if (value === null) return 'unavailable';
+            return String(value);
         },
         _conditionStatusTitle: function (condition) {
             var left = typeof condition.left === 'undefined' ? 'undefined' : condition.left;
@@ -710,6 +749,9 @@
         },
         _refById: function (id) {
             return this.options.circuitRefs.find(function (r) { return r.id === id; });
+        },
+        _refByKindAndId: function (kind, id) {
+            return this.options.circuitRefs.find(function (r) { return r.equipmentType === kind && r.id === id; });
         },
         _parseInput: function (value) {
             if (value === 'true') return true;

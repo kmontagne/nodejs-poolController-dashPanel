@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.8 - 2026-07-22
+
+### Changed
+
+- Widened the Automations rule-name editor and made selected-rule status text explain the first unmet condition.
+
 ## 9.1.0-km.7 - 2026-07-22
 
 ### Added

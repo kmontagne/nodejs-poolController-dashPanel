@@ -2,7 +2,7 @@
 ## What is nodejs-poolController-dashPanel?
 dashPanel is a controller designed to operate using a [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server backend.  You will need to set up your nodejs-poolController server and have it communicating with your pool equipment prior to setting up this server.  Once you have done that you can set up the dashPanel to communicate with that server.
 
-This fork uses semver prerelease versions such as `9.1.0-km.7` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
+This fork uses semver prerelease versions such as `9.1.0-km.8` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 While this project was originally developed using an IntelliCenter control panel it should operate equally well with an IntelliTouch or EasyTouch control panel.
 ![image](https://user-images.githubusercontent.com/47839015/83304160-38a86780-a1b3-11ea-8214-442db6c6bdc4.png)
@@ -39,6 +39,8 @@ When a group is outside its active window, its rules do not evaluate and `Otherw
 Rules are evaluated from top-level pool state such as temperatures, circuit state, feature state, heater state, and schedule state. Temperature conditions include pool, spa, air, solar/glacier, selected body, and dew point.
 
 Runtime conditions compare how long a circuit or feature has been on, in minutes or seconds. Rule stable-time conditions compare how long the rule's other conditions have continuously stayed in their current aggregate true/false state. These are useful for probe rules where equipment, such as a Glacier cooler, needs to run for a few minutes before a temperature delta check is meaningful.
+
+The selected rule status explains the first unmet condition, so a false rule can show the specific temperature, equipment state, delta, or stable-time gate that is preventing its Then actions.
 
 Actions can set circuits or features, lock circuits/features, disable schedules, or write a log message. `Then` actions run when the rule is true. `Otherwise` actions run when the rule is false, subject to the rule's hysteresis settings.
 

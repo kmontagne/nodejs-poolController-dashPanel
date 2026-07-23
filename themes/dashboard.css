@@ -905,6 +905,10 @@ label.picRuleField select {
   width: 10.5rem;
 }
 
+label.picRuleField input.picRuleNameInput {
+  width: min(36rem, 100%);
+}
+
 label.picRuleCheck {
   display: block;
   margin: 0.2rem 0;
