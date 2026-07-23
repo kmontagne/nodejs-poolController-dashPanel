@@ -257,6 +257,8 @@
                 { v: 'tempDelta', t: 'Temp difference' },
                 { v: 'circuitState', t: 'Circuit state' },
                 { v: 'featureState', t: 'Feature state' },
+                { v: 'runtime', t: 'Runtime' },
+                { v: 'ruleStable', t: 'Rule stable time' },
                 { v: 'bodyHeater', t: 'Body heater' },
                 { v: 'stateValue', t: 'State value' }
             ], type).on('change', function () {
@@ -268,6 +270,8 @@
             else if (type === 'tempDelta') self._conditionTempDelta(box, condition);
             else if (type === 'circuitState') self._conditionCircuitState(box, condition);
             else if (type === 'featureState') self._conditionFeatureState(box, condition);
+            else if (type === 'runtime') self._conditionRuntime(box, condition);
+            else if (type === 'ruleStable') self._conditionRuleStable(box, condition);
             else if (type === 'bodyHeater') self._conditionBodyHeater(box, condition);
             else self._conditionStateValue(box, condition);
             self._removeButton(box, function () {
@@ -314,6 +318,45 @@
                 self._markDirty();
             }));
             self._field(box, 'State', self._select([{ v: 'isTrue', t: 'On' }, { v: 'isFalse', t: 'Off' }], condition.operator || 'isTrue').on('change', function () { condition.operator = this.value; self._markDirty(); }));
+        },
+        _conditionRuntime: function (box, condition) {
+            var self = this, parsed = self._parseRuntimePath(condition.left);
+            self._field(box, 'Equipment', self._select([{ v: 'circuit', t: 'Circuit' }, { v: 'feature', t: 'Feature' }], parsed.kind).on('change', function () {
+                parsed.kind = this.value;
+                parsed.id = self._firstRefId(parsed.kind);
+                condition.left = self._runtimeValue(parsed.kind, parsed.id, parsed.metric);
+                self._markDirty();
+                self._buildControls();
+            }));
+            self._field(box, parsed.kind === 'feature' ? 'Feature' : 'Circuit', self._refSelect(parsed.kind, parsed.id).on('change', function () {
+                parsed.id = parseInt(this.value, 10);
+                condition.left = self._runtimeValue(parsed.kind, parsed.id, parsed.metric);
+                self._markDirty();
+            }));
+            self._field(box, 'Unit', self._select([
+                { v: 'runtimeMinutes', t: 'Minutes' },
+                { v: 'runtimeSeconds', t: 'Seconds' }
+            ], parsed.metric).on('change', function () {
+                parsed.metric = this.value;
+                condition.left = self._runtimeValue(parsed.kind, parsed.id, parsed.metric);
+                self._markDirty();
+            }));
+            self._field(box, 'Operator', self._operatorSelect(condition.operator || '>=').on('change', function () { condition.operator = this.value; self._markDirty(); }));
+            self._field(box, 'Value', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
+            $('<div class="picRuleHelp">Runtime is 0 while the equipment is off. Use it to let equipment stabilize before evaluating performance conditions.</div>').appendTo(box);
+        },
+        _conditionRuleStable: function (box, condition) {
+            var self = this, metric = String(condition.left || '') === 'rule:stableSeconds' ? 'stableSeconds' : 'stableMinutes';
+            self._field(box, 'Unit', self._select([
+                { v: 'stableMinutes', t: 'Minutes' },
+                { v: 'stableSeconds', t: 'Seconds' }
+            ], metric).on('change', function () {
+                condition.left = 'rule:' + this.value;
+                self._markDirty();
+            }));
+            self._field(box, 'Operator', self._operatorSelect(condition.operator || '>=').on('change', function () { condition.operator = this.value; self._markDirty(); }));
+            self._field(box, 'Value', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
+            $('<div class="picRuleHelp">Stable time measures how long this rule has continuously stayed true or false.</div>').appendTo(box);
         },
         _conditionBodyHeater: function (box, condition) {
             var self = this, body = String(condition.left || '').indexOf('pool') === 0 ? 'pool' : 'spa';
@@ -610,6 +653,8 @@
             if (type === 'tempDelta') return { left: 'tempDelta:poolTemp:solarTemp', operator: '>=', right: 5 };
             if (type === 'circuitState') return { left: 'circuit:' + (this._firstRefId('circuit') || '') + ':isOn', operator: 'isTrue' };
             if (type === 'featureState') return { left: 'feature:' + (this._firstRefId('feature') || '') + ':isOn', operator: 'isTrue' };
+            if (type === 'runtime') return { left: 'circuit:' + (this._firstRefId('circuit') || '') + ':runtimeMinutes', operator: '>=', right: 10 };
+            if (type === 'ruleStable') return { left: 'rule:stableMinutes', operator: '>=', right: 10 };
             if (type === 'bodyHeater') return { left: 'spaHeaterActive', operator: 'isTrue' };
             if (type === 'stateValue') return { left: 'poolTemp', operator: '>', right: 90 };
             return { left: 'poolTemp', operator: '>', right: 90 };
@@ -623,9 +668,12 @@
             return { type: 'setCircuit', id: this._firstRefId('circuit'), state: true };
         },
         _conditionType: function (condition) {
-            if (String(condition.left || '').indexOf('circuit:') === 0) return 'circuitState';
-            if (String(condition.left || '').indexOf('feature:') === 0) return 'featureState';
-            if (String(condition.left || '').indexOf('tempDelta:') === 0) return 'tempDelta';
+            var left = String(condition.left || '');
+            if (/^(circuit|feature):[^:]+:runtime(Minutes|Seconds)$/.test(left)) return 'runtime';
+            if (left.indexOf('rule:stable') === 0) return 'ruleStable';
+            if (left.indexOf('circuit:') === 0) return 'circuitState';
+            if (left.indexOf('feature:') === 0) return 'featureState';
+            if (left.indexOf('tempDelta:') === 0) return 'tempDelta';
             if (['spaHeaterActive', 'spaHeatModeOn', 'poolHeaterActive', 'poolHeatModeOn'].indexOf(condition.left) >= 0) return 'bodyHeater';
             if (['poolTemp', 'spaTemp', 'bodyTemp', 'solarTemp', 'airTemp', 'dewPoint', 'poolSolarDelta', 'spaSolarDelta', 'bodySolarDelta'].indexOf(condition.left) >= 0) return 'temp';
             return 'stateValue';
@@ -646,6 +694,15 @@
         _parseStatePath: function (left, fallback) {
             var parts = String(left || '').split(':');
             return { kind: parts[0] || fallback, id: parseInt(parts[1], 10) || this._firstRefId(fallback) };
+        },
+        _parseRuntimePath: function (left) {
+            var parts = String(left || '').split(':');
+            var kind = parts[0] === 'feature' ? 'feature' : 'circuit';
+            var metric = parts[2] === 'runtimeSeconds' ? 'runtimeSeconds' : 'runtimeMinutes';
+            return { kind: kind, id: parseInt(parts[1], 10) || this._firstRefId(kind), metric: metric };
+        },
+        _runtimeValue: function (kind, id, metric) {
+            return (kind === 'feature' ? 'feature' : 'circuit') + ':' + (id || '') + ':' + (metric === 'runtimeSeconds' ? 'runtimeSeconds' : 'runtimeMinutes');
         },
         _firstRefId: function (kind) {
             var ref = this.options.circuitRefs.find(function (r) { return r.equipmentType === kind; });

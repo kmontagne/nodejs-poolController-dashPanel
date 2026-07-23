@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.7 - 2026-07-22
+
+### Added
+
+- Added Automations editor controls for circuit/feature runtime and rule stable-time conditions.
+
 ## 9.1.0-km.6 - 2026-07-20
 
 ### Changed
