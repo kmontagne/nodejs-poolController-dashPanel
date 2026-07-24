@@ -3,6 +3,7 @@
         options: {
             rules: { enabled: true, groups: [] },
             circuitRefs: [],
+            pumps: [],
             schedules: [],
             status: null,
             selectedGroupId: null,
@@ -29,12 +30,14 @@
                 $.getApiService('config/rules', null),
                 $.getApiService('config/circuit/references?circuits=true&features=true&groups=false&virtual=false', null),
                 $.getApiService('config/options/schedules', null),
-                $.getApiService('config/temperatureLabels', null)
-            ).done(function (rulesResult, refsResult, scheduleResult, labelsResult) {
+                $.getApiService('config/temperatureLabels', null),
+                $.getApiService('config/options/pumps', null)
+            ).done(function (rulesResult, refsResult, scheduleResult, labelsResult, pumpsResult) {
                 o.rules = self._normalizeRules(rulesResult[0]);
                 o.circuitRefs = refsResult[0] || [];
                 o.schedules = (scheduleResult[0] && scheduleResult[0].schedules) || [];
                 o.temperatureLabels = self._normalizeTemperatureLabels(labelsResult[0]);
+                o.pumps = (pumpsResult[0] && pumpsResult[0].pumps) || [];
                 o.dirty = false;
                 self._syncSelection();
                 self._buildControls();
@@ -403,6 +406,7 @@
                 { v: 'circuitLock', t: 'Circuit lock' },
                 { v: 'featureLock', t: 'Feature lock' },
                 { v: 'setScheduleDisabled', t: 'Schedule' },
+                { v: 'setPumpCircuitSpeed', t: 'Pump circuit RPM' },
                 { v: 'log', t: 'Log' }
             ], action.type || 'setCircuit').on('change', function () {
                 rule[prop][index] = self._newAction(this.value);
@@ -415,6 +419,20 @@
             else if (action.type === 'setScheduleDisabled') {
                 self._field(box, 'Schedule', self._scheduleSelect(action.id || (action.ids && action.ids[0])).on('change', function () { action.id = parseInt(this.value, 10); delete action.ids; self._markDirty(); }));
                 self._field(box, 'Command', self._select([{ v: 'true', t: 'Disable' }, { v: 'false', t: 'Enable' }], String(action.state !== false)).on('change', function () { action.state = this.value === 'true'; self._markDirty(); }));
+            }
+            else if (action.type === 'setPumpCircuitSpeed') {
+                var pump = self._pumpById(action.pumpId) || self.options.pumps[0] || {};
+                action.pumpId = pump.id;
+                action.circuitId = action.circuitId || self._firstPumpCircuitId(pump);
+                self._field(box, 'Pump', self._pumpSelect(action.pumpId).on('change', function () {
+                    action.pumpId = parseInt(this.value, 10);
+                    action.circuitId = self._firstPumpCircuitId(self._pumpById(action.pumpId));
+                    self._markDirty();
+                    self._buildControls();
+                }));
+                self._field(box, 'Circuit', self._pumpCircuitSelect(action.pumpId, action.circuitId).on('change', function () { action.circuitId = parseInt(this.value, 10); self._markDirty(); }));
+                self._field(box, 'RPM', $('<input type="number" min="0" step="10">').val(action.speed || 0).on('change keyup', function () { action.speed = parseInt(this.value, 10) || 0; self._markDirty(); }));
+                $('<div class="picRuleHelp">Updates the selected pump-circuit RPM. The pump still runs at the highest speed required by any active pump circuit.</div>').appendTo(box);
             }
             else {
                 var kind = action.type === 'setFeature' || action.type === 'featureLock' ? 'feature' : 'circuit';
@@ -617,6 +635,44 @@
             if (value) sel.val(String(value));
             return sel;
         },
+        _pumpSelect: function (value) {
+            var sel = $('<select></select>');
+            for (var i = 0; i < this.options.pumps.length; i++) {
+                var pump = this.options.pumps[i];
+                $('<option></option>').val(pump.id).text(pump.name || ('Pump ' + pump.id)).appendTo(sel);
+            }
+            if (this.options.pumps.length === 0) $('<option></option>').val('').text('No pumps found').appendTo(sel);
+            if (value) sel.val(String(value));
+            return sel;
+        },
+        _pumpCircuitSelect: function (pumpId, value) {
+            var sel = $('<select></select>');
+            var pump = this._pumpById(pumpId);
+            var circuits = pump && Array.isArray(pump.circuits) ? pump.circuits : [];
+            for (var i = 0; i < circuits.length; i++) {
+                var circuitId = parseInt(circuits[i].circuit, 10);
+                if (!circuitId || isNaN(circuitId)) continue;
+                var ref = this._refById(circuitId);
+                var speed = parseInt(circuits[i].speed, 10);
+                var label = (ref && ref.name ? ref.name : 'Circuit ' + circuitId) + ' #' + circuitId;
+                if (!isNaN(speed)) label += ' (' + speed + ' RPM)';
+                $('<option></option>').val(circuitId).text(label).appendTo(sel);
+            }
+            if (sel.children().length === 0) $('<option></option>').val('').text('No pump circuits found').appendTo(sel);
+            if (value) sel.val(String(value));
+            return sel;
+        },
+        _pumpById: function (id) {
+            return this.options.pumps.find(function (p) { return p.id === id; });
+        },
+        _firstPumpCircuitId: function (pump) {
+            var circuits = pump && Array.isArray(pump.circuits) ? pump.circuits : [];
+            for (var i = 0; i < circuits.length; i++) {
+                var circuitId = parseInt(circuits[i].circuit, 10);
+                if (circuitId && !isNaN(circuitId)) return circuitId;
+            }
+            return undefined;
+        },
         _markDirty: function () {
             this.options.dirty = true;
             this._setDirtyState(true);
@@ -703,6 +759,10 @@
             if (type === 'circuitLock') return { type: type, id: this._firstRefId('circuit'), state: true };
             if (type === 'featureLock') return { type: type, id: this._firstRefId('feature'), state: true };
             if (type === 'setScheduleDisabled') return { type: type, id: this.options.schedules[0] && this.options.schedules[0].id, state: true };
+            if (type === 'setPumpCircuitSpeed') {
+                var pump = this.options.pumps[0] || {};
+                return { type: type, pumpId: pump.id, circuitId: this._firstPumpCircuitId(pump), speed: 1800 };
+            }
             if (type === 'log') return { type: type, message: 'Rule matched' };
             return { type: 'setCircuit', id: this._firstRefId('circuit'), state: true };
         },

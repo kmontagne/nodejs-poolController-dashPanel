@@ -89,6 +89,7 @@
                 var text = action.type || 'action';
                 if (action.name || action.id) text += ' ' + (action.name || ('#' + action.id));
                 if (typeof action.state !== 'undefined') text += ' ' + (action.state === true ? 'ON' : action.state === false ? 'OFF' : action.state);
+                if (typeof action.speed !== 'undefined') text += ' ' + action.speed + ' RPM';
                 text += ' - ' + (action.status || 'unknown');
                 if (action.message) text += ' (' + action.message + ')';
                 $('<div class="picRuleLogActionDetail"></div>').text(text).appendTo(details);

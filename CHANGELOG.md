@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.9 - 2026-07-24
+
+### Added
+
+- Added Automations editor support for pump circuit RPM rule actions.
+
 ## 9.1.0-km.8 - 2026-07-22
 
 ### Changed

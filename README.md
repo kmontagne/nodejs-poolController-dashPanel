@@ -2,7 +2,7 @@
 ## What is nodejs-poolController-dashPanel?
 dashPanel is a controller designed to operate using a [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server backend.  You will need to set up your nodejs-poolController server and have it communicating with your pool equipment prior to setting up this server.  Once you have done that you can set up the dashPanel to communicate with that server.
 
-This fork uses semver prerelease versions such as `9.1.0-km.8` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
+This fork uses semver prerelease versions such as `9.1.0-km.9` to distinguish Kevin Montagne builds from upstream dashPanel releases. Noteworthy fork-specific behavior is documented here as it is added, and release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 While this project was originally developed using an IntelliCenter control panel it should operate equally well with an IntelliTouch or EasyTouch control panel.
 ![image](https://user-images.githubusercontent.com/47839015/83304160-38a86780-a1b3-11ea-8214-442db6c6bdc4.png)
@@ -42,7 +42,7 @@ Runtime conditions compare how long a circuit or feature has been on, in minutes
 
 The selected rule status explains the first unmet condition, so a false rule can show the specific temperature, equipment state, delta, or stable-time gate that is preventing its Then actions.
 
-Actions can set circuits or features, lock circuits/features, disable schedules, or write a log message. `Then` actions run when the rule is true. `Otherwise` actions run when the rule is false, subject to the rule's hysteresis settings.
+Actions can set circuits or features, set a configured pump-circuit RPM, lock circuits/features, disable schedules, or write a log message. Pump RPM actions update the selected pump/circuit speed entry; the backend pump controller still uses the highest speed required by any active circuit or schedule. `Then` actions run when the rule is true. `Otherwise` actions run when the rule is false, subject to the rule's hysteresis settings.
 
 ### Hysteresis
 Use hysteresis when a rule should remain true or false for a period before actions run. This is useful for temperature-based automation where readings can bounce around a threshold. While hysteresis is pending, the rule status line shows the remaining wait time before `Then` or `Otherwise` actions run.
