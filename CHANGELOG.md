@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.10 - 2026-07-27
+
+### Changed
+
+- Reworked Temperature History curve statistics into aligned Min, Max, and Avg columns with two curve summaries per row.
+
 ## 9.1.0-km.9 - 2026-07-24
 
 ### Added

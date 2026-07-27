@@ -206,22 +206,38 @@
             if (panel.length === 0) return;
             var points = this.options.points || [];
             var keys = this._enabledSeriesKeys();
-            $('<span class="picTempHistoryStatsLabel"></span>').text('Avg / Min / Max:').appendTo(panel);
             if (points.length === 0 || keys.length === 0) {
-                $('<span class="picTempHistoryStatsEmpty"></span>').text(keys.length === 0 ? 'No series selected.' : 'No samples loaded.').appendTo(panel);
+                $('<div class="picTempHistoryStatsEmpty"></div>').text(keys.length === 0 ? 'No series selected.' : 'No samples loaded.').appendTo(panel);
                 return;
             }
             var self = this;
+            var grid = $('<div class="picTempHistoryStatsGrid"></div>').appendTo(panel);
+            var rows = [];
             keys.forEach(function (key) {
                 var stats = self._seriesStats(key);
                 if (!stats) return;
-                $('<span class="picTempHistoryStat"></span>')
-                    .append($('<i></i>').css('background-color', self.options.series[key].color))
-                    .append(document.createTextNode(self.options.series[key].label + ': ' + self._formatTemp(stats.avg) + ' / ' + self._formatTemp(stats.min) + ' / ' + self._formatTemp(stats.max)))
-                    .appendTo(panel);
+                rows.push({ key: key, stats: stats });
             });
-            if (panel.find('span.picTempHistoryStat').length === 0) {
-                $('<span class="picTempHistoryStatsEmpty"></span>').text('No selected temperature values in range.').appendTo(panel);
+            $('<span></span><span></span><span class="picTempHistoryStatHeader">Min</span><span class="picTempHistoryStatHeader">Max</span><span class="picTempHistoryStatHeader">Avg</span><span></span><span></span><span></span><span class="picTempHistoryStatHeader">Min</span><span class="picTempHistoryStatHeader">Max</span><span class="picTempHistoryStatHeader">Avg</span>')
+                .appendTo(grid);
+            for (var i = 0; i < rows.length; i += 2) {
+                var pair = [rows[i], rows[i + 1]];
+                pair.forEach(function (row, pairIndex) {
+                    if (pairIndex === 1) $('<span></span>').appendTo(grid);
+                    if (!row) {
+                        $('<span></span><span></span><span></span><span></span><span></span>').appendTo(grid);
+                        return;
+                    }
+                    $('<i></i>').css('background-color', self.options.series[row.key].color).appendTo(grid);
+                    $('<span class="picTempHistoryStatName"></span>').text(self.options.series[row.key].label + ':').appendTo(grid);
+                    $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.min)).appendTo(grid);
+                    $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.max)).appendTo(grid);
+                    $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.avg)).appendTo(grid);
+                });
+            }
+            if (rows.length === 0) {
+                grid.remove();
+                $('<div class="picTempHistoryStatsEmpty"></div>').text('No selected temperature values in range.').appendTo(panel);
             }
         },
         _enabledSeriesKeys: function () {
