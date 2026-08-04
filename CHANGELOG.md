@@ -1,5 +1,16 @@
 # Changelog
 
+## 9.1.0-km.11 - 2026-08-04
+
+### Added
+
+- Added Automations controls for Party Mode, mode-state conditions, egg timer disable/restore actions, and pump RPM conditions.
+- Added a Valves panel toggle to show all active valve slots or only configured valve names.
+
+### Changed
+
+- Moved the Automations solar label control onto its own row.
+
 ## 9.1.0-km.10 - 2026-07-27
 
 ### Changed

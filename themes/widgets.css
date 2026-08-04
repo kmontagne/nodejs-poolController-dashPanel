@@ -592,6 +592,20 @@ div.picValve {
     padding-top: .15rem;
     padding-bottom: .15rem;
 }
+label.picValveFilter {
+    float: right;
+    font-size: .8rem;
+    font-weight: normal;
+}
+label.picValveFilter input {
+    margin-right: .2rem;
+    vertical-align: middle;
+}
+div.picValveEmpty {
+    color: #777;
+    font-size: .9rem;
+    padding: .35rem .2rem;
+}
 div.picCover {
     font-size: .9rem;
     cursor: default;

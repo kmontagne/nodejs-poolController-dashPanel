@@ -1,6 +1,9 @@
 (function ($) {
     $.widget('pic.valves', {
-        options: {},
+        options: {
+            showAllValves: false,
+            valves: []
+        },
         _create: function () {
             var self = this, o = self.options, el = self.element;
             el[0].initValves = function (data) { self._initValves(data); };
@@ -12,11 +15,25 @@
             let div = $('<div class="picCircuitTitle control-panel-title"></div>');
             div.appendTo(el);
             $('<span class="picCircuitTitle">Valves</span>').appendTo(div);
+            let showAll = self._showAllValves();
+            let toggle = $('<label class="picValveFilter"></label>').appendTo(div);
+            $('<input type="checkbox">').prop('checked', showAll).appendTo(toggle).on('change', function () {
+                self._showAllValves(makeBool($(this).prop('checked')));
+                self._renderValves();
+            });
+            $('<span></span>').text('Show all').appendTo(toggle);
 
-            let valves = Array.isArray(data?.valves) ? data.valves : [];
-            valves = valves.filter(v => typeof v.isActive === 'undefined' || makeBool(v.isActive));
+            o.valves = Array.isArray(data?.valves) ? data.valves : [];
+            self._renderValves();
+        },
+        _renderValves: function () {
+            var self = this, o = self.options, el = self.element;
+            el.children('div.picValve, div.picValveEmpty').remove();
+            let valves = Array.isArray(o.valves) ? o.valves : [];
+            valves = valves.filter(v => self._shouldShowValve(v));
             if (valves.length === 0) {
-                el.hide();
+                if (Array.isArray(o.valves) && o.valves.length > 0) $('<div class="picValveEmpty"></div>').text('No configured valves.').appendTo(el);
+                else el.hide();
                 return;
             }
 
@@ -25,16 +42,40 @@
                 $('<div class="picValve"></div>').appendTo(el).valve(valves[i]);
             }
         },
+        _showAllValves: function (value) {
+            if (typeof value !== 'undefined') {
+                setStorage('picValvesShowAll', makeBool(value) ? 'true' : 'false');
+                this.options.showAllValves = makeBool(value);
+            }
+            let saved = getStorage('picValvesShowAll');
+            if (typeof saved === 'undefined' || saved === null) return makeBool(this.options.showAllValves);
+            return makeBool(saved);
+        },
+        _isPlaceholderValve: function (valve) {
+            return /^Valve\s+[A-Z]$/i.test(String(valve?.name || '').trim());
+        },
+        _shouldShowValve: function (valve) {
+            if (typeof valve === 'undefined' || valve === null) return false;
+            if (typeof valve.isActive !== 'undefined' && !makeBool(valve.isActive)) return false;
+            return this._showAllValves() || !this._isPlaceholderValve(valve);
+        },
         setValveData: function (data) {
             var self = this, o = self.options, el = self.element;
             if (typeof data === 'undefined' || data === null) return;
             let id = parseInt(data.id, 10);
             if (isNaN(id)) return;
 
+            let idx = Array.isArray(o.valves) ? o.valves.findIndex(v => parseInt(v.id, 10) === id) : -1;
+            if (idx >= 0) o.valves[idx] = $.extend(true, {}, o.valves[idx], data);
+            else {
+                if (!Array.isArray(o.valves)) o.valves = [];
+                o.valves.push(data);
+            }
+
             let valve = el.find(`div.picValve[data-id=${id}]`);
-            if (typeof data.isActive !== 'undefined' && !makeBool(data.isActive)) {
+            if (!self._shouldShowValve(data)) {
                 valve.remove();
-                if (el.find('div.picValve').length === 0) el.hide();
+                if (el.find('div.picValve').length === 0) self._renderValves();
                 return;
             }
 

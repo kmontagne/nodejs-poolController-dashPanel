@@ -1,6 +1,6 @@
 {
   "name": "nodejs-poolcontroller-dashpanel",
-  "version": "9.1.0-km.10",
+  "version": "9.1.0-km.11",
   "description": "Dashboard Panel",
   "main": "dist/app.js",
   "author": {

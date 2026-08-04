@@ -19,6 +19,7 @@ The top of the panel also includes temperature-source display controls:
 
 * **Show solar source** controls whether the backend solar temperature source is exposed to Automations and Temperature History.
 * **Solar label** changes the user-facing label. Use this when the controller's solar input is wired to another source, for example `Glacier`.
+* **Party Mode** toggles the backend `party` rule mode so rules can use it as a condition.
 
 The underlying backend field remains `solar` for compatibility, even when the visible label is changed.
 
@@ -38,14 +39,17 @@ When a group is outside its active window, its rules do not evaluate and `Otherw
 ### Conditions and actions
 Rules are evaluated from top-level pool state such as temperatures, circuit state, feature state, heater state, and schedule state. Temperature conditions include pool, spa, air, solar/glacier, selected body, and dew point.
 
-Runtime conditions compare how long a circuit or feature has been on, in minutes or seconds. Rule stable-time conditions compare how long the rule's other conditions have continuously stayed in their current aggregate true/false state. These are useful for probe rules where equipment, such as a Glacier cooler, needs to run for a few minutes before a temperature delta check is meaningful.
+Runtime conditions compare how long a circuit or feature has been on, in minutes or seconds. Rule stable-time conditions compare how long the rule's other conditions have continuously stayed in their current aggregate true/false state. Mode-state conditions test named backend modes such as Party Mode. Pump RPM conditions compare a live pump speed against a numeric threshold. These are useful for probe rules where equipment, such as a Glacier cooler, needs to run for a few minutes before a temperature delta check is meaningful.
 
 The selected rule status explains the first unmet condition, so a false rule can show the specific temperature, equipment state, delta, or stable-time gate that is preventing its Then actions.
 
-Actions can set circuits or features, set a configured pump-circuit RPM, lock circuits/features, disable schedules, or write a log message. Pump RPM actions update the selected pump/circuit speed entry; the backend pump controller still uses the highest speed required by any active circuit or schedule. `Then` actions run when the rule is true. `Otherwise` actions run when the rule is false, subject to the rule's hysteresis settings.
+Actions can set circuits or features, set a configured pump-circuit RPM, lock circuits/features, disable schedules, disable/restore egg timers, or write a log message. Pump RPM actions update the selected pump/circuit speed entry; the backend pump controller still uses the highest speed required by any active circuit or schedule. Egg timer actions set a circuit or feature to Don't Stop and let the backend restore the captured timer when the rule no longer owns the override. `Then` actions run when the rule is true. `Otherwise` actions run when the rule is false, subject to the rule's hysteresis settings.
 
 ### Hysteresis
 Use hysteresis when a rule should remain true or false for a period before actions run. This is useful for temperature-based automation where readings can bounce around a threshold. While hysteresis is pending, the rule status line shows the remaining wait time before `Then` or `Otherwise` actions run.
+
+## Valves
+The **Valves** panel hides placeholder valves named with the default `Valve [letter]` convention by default. Use **Show all** to include every active valve slot reported by the backend.
 
 ## Rule Log
 The **Rule Log** panel shows recent rule action events from the backend `/config/rules/log` API. It is collapsed by default, appears between Automations and Temperature History in the dedicated automation/charting row, and only loads entries when expanded.

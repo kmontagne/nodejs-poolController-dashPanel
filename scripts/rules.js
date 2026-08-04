@@ -82,7 +82,13 @@
                     self._markDirty();
                     self._buildControls();
                 });
-            self._field(top, 'Solar label', $('<input type="text" maxlength="24" class="picRuleSolarLabel">').val(self._solarTempConfig().label).on('change keyup', function () {
+            var party = self._modeById('party');
+            $('<label class="picRuleModeToggle"><input type="checkbox"> Party Mode</label>').appendTo(top)
+                .find('input').prop('checked', party.isOn === true).on('change', function () {
+                    self._setMode('party', this.checked);
+                });
+            var solarLine = $('<div class="picRulesTopLine"></div>').appendTo(content);
+            self._field(solarLine, 'Solar label', $('<input type="text" maxlength="24" class="picRuleSolarLabel">').val(self._solarTempConfig().label).on('change keyup', function () {
                 o.temperatureLabels = o.temperatureLabels || self._normalizeTemperatureLabels();
                 o.temperatureLabels.solar.label = this.value || 'Solar';
                 self._markDirty();
@@ -261,7 +267,9 @@
                 { v: 'circuitState', t: 'Circuit state' },
                 { v: 'featureState', t: 'Feature state' },
                 { v: 'runtime', t: 'Runtime' },
+                { v: 'pumpRpm', t: 'Pump RPM' },
                 { v: 'ruleStable', t: 'Rule stable time' },
+                { v: 'modeState', t: 'Mode state' },
                 { v: 'bodyHeater', t: 'Body heater' },
                 { v: 'stateValue', t: 'State value' }
             ], type).on('change', function () {
@@ -274,7 +282,9 @@
             else if (type === 'circuitState') self._conditionCircuitState(box, condition);
             else if (type === 'featureState') self._conditionFeatureState(box, condition);
             else if (type === 'runtime') self._conditionRuntime(box, condition);
+            else if (type === 'pumpRpm') self._conditionPumpRpm(box, condition);
             else if (type === 'ruleStable') self._conditionRuleStable(box, condition);
+            else if (type === 'modeState') self._conditionModeState(box, condition);
             else if (type === 'bodyHeater') self._conditionBodyHeater(box, condition);
             else self._conditionStateValue(box, condition);
             self._removeButton(box, function () {
@@ -348,6 +358,15 @@
             self._field(box, 'Value', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
             $('<div class="picRuleHelp">Runtime is 0 while the equipment is off. Use it to let equipment stabilize before evaluating performance conditions.</div>').appendTo(box);
         },
+        _conditionPumpRpm: function (box, condition) {
+            var self = this, parsed = self._parsePumpRpmPath(condition.left);
+            self._field(box, 'Pump', self._pumpSelect(parsed.id).on('change', function () {
+                condition.left = 'pump:' + this.value + ':rpm';
+                self._markDirty();
+            }));
+            self._field(box, 'Operator', self._operatorSelect(condition.operator || '>=').on('change', function () { condition.operator = this.value; self._markDirty(); }));
+            self._field(box, 'RPM', $('<input type="number" min="0" step="10">').val(condition.right || 0).on('change keyup', function () { condition.right = parseInt(this.value, 10) || 0; self._markDirty(); }));
+        },
         _conditionRuleStable: function (box, condition) {
             var self = this, metric = String(condition.left || '') === 'rule:stableSeconds' ? 'stableSeconds' : 'stableMinutes';
             self._field(box, 'Unit', self._select([
@@ -360,6 +379,14 @@
             self._field(box, 'Operator', self._operatorSelect(condition.operator || '>=').on('change', function () { condition.operator = this.value; self._markDirty(); }));
             self._field(box, 'Value', $('<input type="text">').val(self._valueText(condition.right)).on('change keyup', function () { condition.right = self._parseInput(this.value); self._markDirty(); }));
             $('<div class="picRuleHelp">Stable time measures how long this rule has continuously stayed true or false.</div>').appendTo(box);
+        },
+        _conditionModeState: function (box, condition) {
+            var self = this, parsed = self._parseModePath(condition.left);
+            self._field(box, 'Mode', self._modeSelect(parsed.id).on('change', function () {
+                condition.left = 'mode:' + this.value + ':isOn';
+                self._markDirty();
+            }));
+            self._field(box, 'State', self._select([{ v: 'isTrue', t: 'On' }, { v: 'isFalse', t: 'Off' }], condition.operator || 'isTrue').on('change', function () { condition.operator = this.value; self._markDirty(); }));
         },
         _conditionBodyHeater: function (box, condition) {
             var self = this, body = String(condition.left || '').indexOf('pool') === 0 ? 'pool' : 'spa';
@@ -407,6 +434,7 @@
                 { v: 'featureLock', t: 'Feature lock' },
                 { v: 'setScheduleDisabled', t: 'Schedule' },
                 { v: 'setPumpCircuitSpeed', t: 'Pump circuit RPM' },
+                { v: 'setEggTimerDisabled', t: 'Egg timer' },
                 { v: 'log', t: 'Log' }
             ], action.type || 'setCircuit').on('change', function () {
                 rule[prop][index] = self._newAction(this.value);
@@ -419,6 +447,18 @@
             else if (action.type === 'setScheduleDisabled') {
                 self._field(box, 'Schedule', self._scheduleSelect(action.id || (action.ids && action.ids[0])).on('change', function () { action.id = parseInt(this.value, 10); delete action.ids; self._markDirty(); }));
                 self._field(box, 'Command', self._select([{ v: 'true', t: 'Disable' }, { v: 'false', t: 'Enable' }], String(action.state !== false)).on('change', function () { action.state = this.value === 'true'; self._markDirty(); }));
+            }
+            else if (action.type === 'setEggTimerDisabled') {
+                action.targetType = action.targetType === 'circuit' ? 'circuit' : 'feature';
+                self._field(box, 'Equipment', self._select([{ v: 'feature', t: 'Feature' }, { v: 'circuit', t: 'Circuit' }], action.targetType).on('change', function () {
+                    action.targetType = this.value;
+                    action.id = self._firstRefId(action.targetType);
+                    self._markDirty();
+                    self._buildControls();
+                }));
+                self._field(box, action.targetType === 'circuit' ? 'Circuit' : 'Feature', self._refSelect(action.targetType, action.id).on('change', function () { action.id = parseInt(this.value, 10); self._markDirty(); }));
+                self._field(box, 'Command', self._select([{ v: 'true', t: 'Disable egg timer' }, { v: 'false', t: 'Restore egg timer' }], String(action.state !== false)).on('change', function () { action.state = this.value === 'true'; self._markDirty(); }));
+                $('<div class="picRuleHelp">Disable egg timer sets the equipment to Don&apos;t Stop. Restore puts back the timer settings captured when this rule first disabled it.</div>').appendTo(box);
             }
             else if (action.type === 'setPumpCircuitSpeed') {
                 var pump = self._pumpById(action.pumpId) || self.options.pumps[0] || {};
@@ -723,6 +763,8 @@
         },
         _normalizeRules: function (rules) {
             rules = rules || { enabled: true, groups: [] };
+            rules.modes = Array.isArray(rules.modes) ? rules.modes : [];
+            if (!rules.modes.find(function (mode) { return mode.id === 'party'; })) rules.modes.unshift({ id: 'party', name: 'Party Mode', isOn: false });
             rules.groups = Array.isArray(rules.groups) ? rules.groups : [];
             for (var i = 0; i < rules.groups.length; i++) {
                 rules.groups[i].match = rules.groups[i].match || 'all';
@@ -749,7 +791,9 @@
             if (type === 'circuitState') return { left: 'circuit:' + (this._firstRefId('circuit') || '') + ':isOn', operator: 'isTrue' };
             if (type === 'featureState') return { left: 'feature:' + (this._firstRefId('feature') || '') + ':isOn', operator: 'isTrue' };
             if (type === 'runtime') return { left: 'circuit:' + (this._firstRefId('circuit') || '') + ':runtimeMinutes', operator: '>=', right: 10 };
+            if (type === 'pumpRpm') return { left: 'pump:' + ((this.options.pumps[0] && this.options.pumps[0].id) || '') + ':rpm', operator: '>=', right: 1200 };
             if (type === 'ruleStable') return { left: 'rule:stableMinutes', operator: '>=', right: 10 };
+            if (type === 'modeState') return { left: 'mode:party:isOn', operator: 'isTrue' };
             if (type === 'bodyHeater') return { left: 'spaHeaterActive', operator: 'isTrue' };
             if (type === 'stateValue') return { left: 'poolTemp', operator: '>', right: 90 };
             return { left: 'poolTemp', operator: '>', right: 90 };
@@ -759,6 +803,7 @@
             if (type === 'circuitLock') return { type: type, id: this._firstRefId('circuit'), state: true };
             if (type === 'featureLock') return { type: type, id: this._firstRefId('feature'), state: true };
             if (type === 'setScheduleDisabled') return { type: type, id: this.options.schedules[0] && this.options.schedules[0].id, state: true };
+            if (type === 'setEggTimerDisabled') return { type: type, targetType: 'feature', id: this._firstRefId('feature'), state: true };
             if (type === 'setPumpCircuitSpeed') {
                 var pump = this.options.pumps[0] || {};
                 return { type: type, pumpId: pump.id, circuitId: this._firstPumpCircuitId(pump), speed: 1800 };
@@ -769,7 +814,9 @@
         _conditionType: function (condition) {
             var left = String(condition.left || '');
             if (/^(circuit|feature):[^:]+:runtime(Minutes|Seconds)$/.test(left)) return 'runtime';
+            if (/^pump:[^:]+:rpm$/.test(left)) return 'pumpRpm';
             if (left.indexOf('rule:stable') === 0) return 'ruleStable';
+            if (left.indexOf('mode:') === 0) return 'modeState';
             if (left.indexOf('circuit:') === 0) return 'circuitState';
             if (left.indexOf('feature:') === 0) return 'featureState';
             if (left.indexOf('tempDelta:') === 0) return 'tempDelta';
@@ -800,8 +847,39 @@
             var metric = parts[2] === 'runtimeSeconds' ? 'runtimeSeconds' : 'runtimeMinutes';
             return { kind: kind, id: parseInt(parts[1], 10) || this._firstRefId(kind), metric: metric };
         },
+        _parsePumpRpmPath: function (left) {
+            var parts = String(left || '').split(':');
+            return { id: parseInt(parts[1], 10) || (this.options.pumps[0] && this.options.pumps[0].id) };
+        },
         _runtimeValue: function (kind, id, metric) {
             return (kind === 'feature' ? 'feature' : 'circuit') + ':' + (id || '') + ':' + (metric === 'runtimeSeconds' ? 'runtimeSeconds' : 'runtimeMinutes');
+        },
+        _parseModePath: function (left) {
+            var parts = String(left || '').split(':');
+            return { id: parts[0] === 'mode' && parts[1] ? parts[1] : 'party' };
+        },
+        _modeSelect: function (selected) {
+            var modes = this._rulesModes();
+            var items = modes.map(function (mode) { return { v: mode.id, t: mode.name || mode.id }; });
+            return this._select(items, selected || (items[0] && items[0].v) || 'party');
+        },
+        _rulesModes: function () {
+            this.options.rules.modes = Array.isArray(this.options.rules.modes) ? this.options.rules.modes : [];
+            if (!this.options.rules.modes.find(function (mode) { return mode.id === 'party'; })) this.options.rules.modes.unshift({ id: 'party', name: 'Party Mode', isOn: false });
+            return this.options.rules.modes;
+        },
+        _modeById: function (id) {
+            var modes = this._rulesModes();
+            return modes.find(function (mode) { return mode.id === id; }) || { id: id, name: id, isOn: false };
+        },
+        _setMode: function (id, isOn) {
+            var self = this, mode = self._modeById(id);
+            mode.isOn = isOn === true;
+            $.putApiService('config/rules/mode/' + encodeURIComponent(id), { isOn: mode.isOn }, 'Saving Mode...', function (rules) {
+                self.options.rules = self._normalizeRules(rules);
+                self._buildControls();
+                self._loadStatus();
+            });
         },
         _firstRefId: function (kind) {
             var ref = this.options.circuitRefs.find(function (r) { return r.equipmentType === kind; });
