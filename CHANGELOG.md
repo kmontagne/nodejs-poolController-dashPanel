@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0-km.12 - 2026-08-05
+
+### Changed
+
+- Changed Temperature History curve statistics column order to Avg, Min, and Max.
+
 ## 9.1.0-km.11 - 2026-08-04
 
 ### Added

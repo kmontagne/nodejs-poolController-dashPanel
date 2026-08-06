@@ -65,7 +65,7 @@ Each series toggle includes a wide color marker that matches the plotted curve, 
 
 The panel appears below Rule Log in the dedicated automation/charting row. When collapsed, it shrinks to its title row.
 
-Below the series toggles, the panel shows Min, Max, and Avg statistics for each enabled visible curve over the selected date/time range. Curve summaries are shown in the same order as the series toggles, with aligned numeric columns and up to two curves per row.
+Below the series toggles, the panel shows Avg, Min, and Max statistics for each enabled visible curve over the selected date/time range. Curve summaries are shown in the same order as the series toggles, with aligned numeric columns and up to two curves per row.
 
 Move the mouse over the chart area to show a vertical guide line and the values for the nearest sample. The values are displayed above the chart status line and sorted from highest to lowest value for easier comparison.
 

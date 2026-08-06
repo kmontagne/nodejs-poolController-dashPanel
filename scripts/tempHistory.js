@@ -218,7 +218,7 @@
                 if (!stats) return;
                 rows.push({ key: key, stats: stats });
             });
-            $('<span></span><span></span><span class="picTempHistoryStatHeader">Min</span><span class="picTempHistoryStatHeader">Max</span><span class="picTempHistoryStatHeader">Avg</span><span></span><span></span><span></span><span class="picTempHistoryStatHeader">Min</span><span class="picTempHistoryStatHeader">Max</span><span class="picTempHistoryStatHeader">Avg</span>')
+            $('<span></span><span></span><span class="picTempHistoryStatHeader">Avg</span><span class="picTempHistoryStatHeader">Min</span><span class="picTempHistoryStatHeader">Max</span><span></span><span></span><span></span><span class="picTempHistoryStatHeader">Avg</span><span class="picTempHistoryStatHeader">Min</span><span class="picTempHistoryStatHeader">Max</span>')
                 .appendTo(grid);
             for (var i = 0; i < rows.length; i += 2) {
                 var pair = [rows[i], rows[i + 1]];
@@ -230,9 +230,9 @@
                     }
                     $('<i></i>').css('background-color', self.options.series[row.key].color).appendTo(grid);
                     $('<span class="picTempHistoryStatName"></span>').text(self.options.series[row.key].label + ':').appendTo(grid);
+                    $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.avg)).appendTo(grid);
                     $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.min)).appendTo(grid);
                     $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.max)).appendTo(grid);
-                    $('<span class="picTempHistoryStatValue"></span>').text(self._formatTemp(row.stats.avg)).appendTo(grid);
                 });
             }
             if (rows.length === 0) {
