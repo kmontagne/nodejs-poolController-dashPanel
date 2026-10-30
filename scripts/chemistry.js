@@ -86,6 +86,13 @@
             self._buildControls();
             el[0].setEquipmentData = function (data) { self.setEquipmentData(data); };
             el[0].stopCountdownSuperChlor = function (data) { self.stopCountdownSuperChlor(); };
+            if (typeof ResizeObserver === 'function') {
+                o.usageResizeObserver = new ResizeObserver(function () { self._syncUsageLayout(); });
+                o.usageResizeObserver.observe(el[0]);
+            }
+        },
+        _destroy: function () {
+            if (this.options.usageResizeObserver) this.options.usageResizeObserver.disconnect();
         },
         setEquipmentData: function (data) {
             var self = this, o = self.options, el = self.element;
@@ -97,6 +104,7 @@
                 //data.state = data.currentOutput > 0 ? 'on' : 'off';
                 el.find('div.picChlorinatorState').attr('data-status', data.currentOutput > 0 ? 'on' : 'off');
                 dataBinder.bind(el, data);
+                self._syncUsageLayout();
                 let sc = el.find('div.picSuperChlor');
                 if (data.superChlor) {
                     sc.show();
@@ -181,6 +189,18 @@
                     var divPopover = $('<div class="picChlorSettings"></div>');
                     divPopover.appendTo(el);
                     divPopover.on('initPopover', function (evt) {
+                        if (typeof data.usageHours === 'number') {
+                            $('<div class="picChlorUsage"></div>')
+                                .html('Usage: <span data-bind="usageHours" data-fmttype="number" data-fmtmask="#,##0.00"></span> hours')
+                                .attr('title', 'Cumulative since tracking began. Missing observations are estimated using the average of the last and current output percentages.')
+                                .appendTo(evt.contents());
+                            $('<div></div>').appendTo(evt.contents()).actionButton({ text: 'Set cell usage', icon: '<i class="fas fa-edit"></i>' })
+                                .on('click', function (e) {
+                                    e.preventDefault();
+                                    e.stopImmediatePropagation();
+                                    self._editUsage();
+                                });
+                        }
                         let saltReqd = parseFloat(el.attr('data-saltrequired'));
                         if (saltReqd > 0) $('<div class="picSaltReqd"><i class="fas fa-bell"></i><span> Add ' + (saltReqd / 40).toFixed(2) + ' 40lb bags of salt</span></div>').appendTo(evt.contents());
                         if (data.body.val === 32 || data.body.val === 0) {
@@ -277,6 +297,64 @@
                 evt.stopImmediatePropagation();
             });
         },
+        _syncUsageLayout: function () {
+            var el = this.element;
+            var saltLabel = el.children('span.picSaltLevel').children('label.picInline-label')[0];
+            if (!saltLabel) return;
+            // Match the rendered Salt label, including theme-specific font choices.
+            // Repeat on state updates so a theme change is reflected in this row.
+            var font = window.getComputedStyle(saltLabel);
+            var usage = el.children('div.picChlorUsage');
+            usage.add(usage.find('label, span')).css({
+                fontFamily: font.fontFamily,
+                fontSize: font.fontSize,
+                fontWeight: font.fontWeight,
+                fontStyle: font.fontStyle,
+                fontVariant: font.fontVariant,
+                lineHeight: font.lineHeight,
+                letterSpacing: font.letterSpacing
+            });
+            // Keep Usage directly below Salt across themes and panel widths.
+            usage.css({ width: '100%', flexBasis: '100%', boxSizing: 'border-box' });
+            var usageLabel = usage.children('label.picInline-label')[0];
+            if (usageLabel && el.is(':visible')) {
+                var padding = parseFloat(usage.css('padding-left')) || 0;
+                var offset = saltLabel.getBoundingClientRect().left - usageLabel.getBoundingClientRect().left;
+                usage.css('padding-left', Math.max(0, padding + offset));
+            }
+        },
+        _editUsage: function () {
+            var self = this, el = self.element;
+            if (!$.pic.icSecurity.canWrite(0)) return;
+            var dlg = $.pic.modalDialog.createDialog('dlgSetChlorinatorUsage' + el.attr('data-id'), {
+                title: 'Set Cell Usage', width: '350px', height: 'auto',
+                buttons: [{
+                    text: 'Save', icon: '<i class="fas fa-save"></i>',
+                    click: function () {
+                        var input = dlg.find('input.picUsageHours')[0];
+                        var hours = input.valueAsNumber;
+                        if (!input.checkValidity() || !Number.isFinite(hours) || hours < 0) {
+                            dlg.find('.picUsageError').text('Enter a non-negative number of hours.');
+                            input.focus();
+                            return;
+                        }
+                        $.putApiService('/state/chlorinator/resetUsage', { id: parseInt(el.attr('data-id'), 10), usageHours: hours }, function (data) {
+                            self.setEquipmentData(data);
+                            $.pic.modalDialog.closeDialog(dlg);
+                        });
+                    }
+                }, {
+                    text: 'Cancel', icon: '<i class="far fa-window-close"></i>',
+                    click: function () { $.pic.modalDialog.closeDialog(this); }
+                }]
+            });
+            dlg.empty();
+            $('<p></p>').text('Enter the cell usage total. Use 0 for a new cell.').appendTo(dlg);
+            var inputId = 'chlorinatorUsageHours' + el.attr('data-id');
+            $('<label></label>').attr('for', inputId).text('Usage (hours) ').appendTo(dlg);
+            $('<input class="picUsageHours" type="number" min="0" step="any" required>').attr('id', inputId).val(0).appendTo(dlg);
+            $('<div class="picUsageError" role="alert"></div>').appendTo(dlg);
+        },
         _buildControls: function () {
             var self = this, o = self.options, el = self.element;
             el.addClass('picChlorinator');
@@ -289,6 +367,8 @@
             $('<label class="picChlorinatorName" data-bind="name"></label>').appendTo(el);
             $('<span class="picSaltLevel picData"><label class="picInline-label">Salt</label><span class="picSaltLevel" data-bind="saltLevel" data-fmttype="number" data-fmtmask="#,##0" data-fmtempty="----"></span><label class="picUnits">ppm</label></span>').appendTo(el);
             $('<span class="picCurrentOutput picData"><label class="picInline-label">Output</label><span class="picCurrentOutput" data-bind="currentOutput"></span><label class="picUnits">%</label></span>').appendTo(el);
+
+            $('<div class="picChlorUsage picData" title="Equivalent hours at 100% output. Open chlorinator settings to edit usage."><label class="picInline-label">Usage</label><span data-bind="usageHours" data-fmttype="number" data-fmtmask="#,##0.00" data-fmtempty="----"></span> <label class="picUnits">hours</label></div>').appendTo(el);
 
             $('<div class="picChlorStatus picData"><span class="picStatus" data-bind="status.desc"></span></div>').appendTo(el);
             $('<div class="picSuperChlor picData"><label class="picInline-label">Super Chlor:</label><span class="picSuperChlorRemaining" data-bind="superChlorRemaining" data-fmttype="duration"></span></div>').appendTo(el);

@@ -10,6 +10,32 @@ While this project was originally developed using an IntelliCenter control panel
 ## Configuring the dashPanel
 To configure the dashPanel you need to place the url for your [nodejs-poolController](https://github.com/tagyoureit/nodejs-poolController) server in the configuration.  Click the bars menu on the top left of the screen and fill in the ip address and port.  Then press the Apply button.  If this button is grayed out you will need to edit the config.json file manually and enter the settings under the services menu.
 
+## Chlorinator usage
+
+The **Chemistry** panel shows each chlorinator's accumulated usage as **Usage
+0.00 hours**, aligned below **Salt**. The entire usage row matches the Salt label's
+font. The total represents equivalent hours at full output: an hour at 50% output
+adds 0.5 usage hours.
+
+Open the chlorinator settings by clicking its entry, then choose **Set cell usage**.
+The **Usage (hours)** edit box starts at **0** every time it opens. Enter a
+non-negative number, including fractional hours, and select **Save**. Use 0 for a
+replacement cell or enter a known total for an existing cell. **Cancel** leaves the
+total unchanged. Editing requires the same write access as other chlorinator settings.
+
+The backend saves the total across restarts and begins a new tracking interval
+when you save an adjustment. Tracking starts with the first output observation;
+the server cannot reconstruct a cell's earlier lifetime usage. After a restart,
+or a gap longer than 60 seconds without an observation, it estimates usage over
+the gap using the average of the last and current output percentages.
+
+This requires a backend that supplies `usageHours` and accepts
+`PUT /state/chlorinator/resetUsage` with `{ "id": 1, "usageHours": 125.5 }`.
+See the [controller README](../nodejs-poolController/README.md) for persistence and API details.
+
+App pages and theme stylesheets require browser revalidation so deployments can
+update the display on reload. Reload the browser page after a dashboard deployment.
+
 ## Automations
 The **Automations** panel edits the nodejs-poolController rules engine configuration stored on the backend under `web.rules`. Use it to create rule groups, add rules, define conditions, and choose actions.
 
@@ -74,6 +100,11 @@ Message manager allows you to inspect your RS485 communication coming from and g
 ![image](https://user-images.githubusercontent.com/47839015/83314254-7a92d700-a1ce-11ea-8891-545db084624e.png)
 
 ## Quick Start (docker-compose)
+
+For this installation's current Raspberry Pi address, source-image deployment,
+state backups, and chlorinator usage checks, see the
+[Raspberry Pi deployment guide](docs/DEPLOY_COMMANDS.md).
+
 Below is a minimal example running both the backend `nodejs-poolController` (service name `njspc`) and this dashPanel UI (service name `njspc-dash`). Adjust volumes and device mappings as needed. The dashPanel writes its configuration to `/app/config.json`, so we bind mount a host file to persist it. Additional runtime state (queues/uploads/logs) uses named volumes.
 
 ```yaml

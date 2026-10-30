@@ -130,7 +130,10 @@ export class HttpServer extends ProtoServer {
                     next();
                 }
             });
-            this.app.use(express.static(path.join(process.cwd(), 'pages'), { maxAge: '1d' }));
+            // Revalidate app pages so deployments can update stylesheet references.
+            this.app.use(express.static(path.join(process.cwd(), 'pages'), {
+                maxAge: 0, setHeaders: res => res.setHeader('Cache-Control', 'no-cache')
+            }));
             this.app.use(express.json());
             // Put in a custom replacer so that we can send error messages to the client.  If we don't do this the base properties of Error
             // are omitted from the output.
@@ -162,7 +165,9 @@ export class HttpServer extends ProtoServer {
                 next();
             });
             this.app.use('/scripts', express.static(path.join(process.cwd(), '/scripts/'), { maxAge: 0 }));
-            this.app.use('/themes', express.static(path.join(process.cwd(), '/themes/'), { maxAge: '1d' }));
+            this.app.use('/themes', express.static(path.join(process.cwd(), '/themes/'), {
+                maxAge: 0, setHeaders: res => res.setHeader('Cache-Control', 'no-cache')
+            }));
             this.app.use('/icons', express.static(path.join(process.cwd(), '/themes/icons'), { maxAge: '1d' }));
             RelayRoute.initRoutes(this.app);
             SecurityRoute.initRoutes(this.app);
@@ -280,7 +285,9 @@ export class HttpsServer extends HttpServer {
             }
             this.server = https.createServer(opts, this.app);
 
-	    this.app.use(express.static(path.join(process.cwd(), 'pages'), { maxAge: '1d' }));
+	    this.app.use(express.static(path.join(process.cwd(), 'pages'), {
+                maxAge: 0, setHeaders: res => res.setHeader('Cache-Control', 'no-cache')
+            }));
             this.app.use(express.json());
             this.app.use((req, res, next) => {
                 res.header('Access-Control-Allow-Origin', '*');
@@ -331,7 +338,9 @@ export class HttpsServer extends HttpServer {
                 next();
             });
             this.app.use('/scripts', express.static(path.join(process.cwd(), '/scripts/'), { maxAge: 0 }));
-            this.app.use('/themes', express.static(path.join(process.cwd(), '/themes/'), { maxAge: '1d' }));
+            this.app.use('/themes', express.static(path.join(process.cwd(), '/themes/'), {
+                maxAge: 0, setHeaders: res => res.setHeader('Cache-Control', 'no-cache')
+            }));
             this.app.use('/icons', express.static(path.join(process.cwd(), '/themes/icons'), { maxAge: '1d' }));
             RelayRoute.initRoutes(this.app);
             SecurityRoute.initRoutes(this.app);

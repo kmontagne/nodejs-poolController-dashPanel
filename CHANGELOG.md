@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added chlorinator **Usage** in the Chemistry panel, aligned below Salt and using the Salt label's font.
+- Added **Set cell usage** with a numeric hours field prefilled with 0, support for fractional hours, and validation for non-negative values. Saving starts a new tracking interval at the entered total.
+
+### Fixed
+
+- Made app pages and theme stylesheets revalidate on reload and versioned the widget stylesheet reference to load updated styling after deployment.
+
 ## 9.1.0-km.12 - 2026-08-05
 
 ### Changed
